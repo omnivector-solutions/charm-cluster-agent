@@ -1,0 +1,9 @@
+upgrade:
+  description: >
+    Upgrade armada-agent.
+  params:
+    version:
+      type: string
+      description: Version of armada-agent to upgrade to.
+  required:
+    - version

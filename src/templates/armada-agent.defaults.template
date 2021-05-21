@@ -1,0 +1,4 @@
+ARMADA_AGENT_BACKEND_URL={backend_url}
+ARMADA_AGENT_JWT={jwt}
+ARMADA_AGENT_API_KEY={api_key}
+ARMADA_AGENT_LOG_DIR={log_base_dir}

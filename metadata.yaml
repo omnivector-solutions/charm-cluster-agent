@@ -1,0 +1,13 @@
+name: armada-agent
+summary: Armada agent juju charm
+maintainers:
+    - Omnivector Solutions <info@omnivector.solutions>
+description: |
+    This charm provides the armada-agent.
+tags:
+    - armada
+    - omnivector
+
+series:
+    - centos7
+    - focal
