@@ -28,11 +28,16 @@ class ArmadaAgentOps:
         """Initialize armada-agent-ops."""
         self._charm = charm
 
-    def install(self):
-        """Install armada-agent and setup ops."""
-        pypi_url = self._charm.model.config["pypi-url"]
+    def _derived_pypi_url(self):
+        url = self._charm.model.config["pypi-url"]
+        url = url.split("://")[1]
         pypi_username = self._charm.model.config["pypi-username"]
         pypi_password = self._charm.model.config["pypi-password"]
+        return (f"https://{pypi_username}:{pypi_password}@"
+                f"{url}/simple/{self._PACKAGE_NAME}")
+
+    def install(self):
+        """Install armada-agent and setup ops."""
 
         # Create log dir
         if not self._LOG_DIR.exists():
@@ -57,16 +62,26 @@ class ArmadaAgentOps:
         ]
         subprocess.call(upgrade_pip_cmd)
 
-        # Install PyYAML
-        subprocess.call(["./src/templates/install_pyyaml.sh"])
+        # Install uvicorn and pyyaml
+        pip_install_pyyaml_uvicorn = [
+            self._PIP_CMD,
+            "install",
+            "uvicorn",
+            "pyyaml",
+        ]
+        out = subprocess.check_output(
+            pip_install_pyyaml_uvicorn).decode().strip()
+        if "Successfully installed" not in out:
+            logger.error("Trouble installing uvicorn, pyyaml, please debug")
+        else:
+            logger.debug("uvicorn, pyyaml installed")
 
         # Install armada-agent
-        url = pypi_url.split("://")[1]
         pip_install_cmd = [
             self._PIP_CMD,
             "install",
             "-f",
-            f"https://{pypi_username}:{pypi_password}@{url}",
+            self._derived_pypi_url(),
             self._PACKAGE_NAME,
         ]
         out = subprocess.check_output(pip_install_cmd).decode().strip()
@@ -86,18 +101,12 @@ class ArmadaAgentOps:
 
     def upgrade(self, version: str):
         """Upgrade armada-agent."""
-        pypi_url = self._charm.model.config["pypi-url"]
-        pypi_username = self._charm.model.config["pypi-username"]
-        pypi_password = self._charm.model.config["pypi-password"]
-
-        url = pypi_url.split("://")[1]
         pip_install_cmd = [
             self._PIP_CMD,
             "install",
             "--upgrade",
             "-f",
-            f"https://{pypi_username}:{pypi_password}@{url}",
-            f"{self._PACKAGE_NAME}=={version}",
+            f"{self._derived_pypi_url()}=={version}",
         ]
 
         out = subprocess.check_output(pip_install_cmd).decode().strip()

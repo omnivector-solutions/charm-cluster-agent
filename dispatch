@@ -26,6 +26,9 @@ if ! [[ -f '.installed' ]]; then
             echo "Running unsuppored version of centos: $major"
             exit -1
         fi
+    else
+	apt update
+	apt install -y python3-venv
     fi
     touch .installed
 fi
