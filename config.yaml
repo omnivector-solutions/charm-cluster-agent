@@ -1,15 +1,10 @@
 options:
-  jwt:
-    type: string
-    default:
-    description: |
-      The slurmrestd jwt key
   api-key:
     type: string
     default:
     description: |
       The backend api-key
-  backend-url:
+  base-api-url:
     type: string
     default:
     description: |
@@ -29,4 +24,3 @@ options:
     default:
     description: |
       PYPI PASSWORD
- 

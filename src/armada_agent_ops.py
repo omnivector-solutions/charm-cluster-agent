@@ -4,7 +4,7 @@ ArmadaAgentOps.
 import logging
 import subprocess
 
-from shutil import rmtree
+from shutil import rmtree, copy2
 
 from pathlib import Path
 
@@ -15,12 +15,13 @@ logger = logging.getLogger()
 class ArmadaAgentOps:
     """Track and perform armada-agent ops."""
 
-    _ARMADA_AGENT_PACKAGE_NAME = "armada-agent"
+    _PACKAGE_NAME = "armada-agent"
     _SYSTEMD_SERVICE_NAME = "armada-agent"
     _LOG_DIR = Path("/var/log/armada-agent")
-    _ETC_DEFAULT = Path("/etc/default/armada-agent")
     _SYSTEMD_BASE_PATH = Path("/usr/lib/systemd/system")
+    _SYSTEMD_SERVICE_FILE = _SYSTEMD_BASE_PATH / f"{_PACKAGE_NAME}.service"
     _VENV_DIR = Path("/srv/armada-agent-venv")
+    _ENV_DEFAULTS = _VENV_DIR / ".env"
     _PIP_CMD = _VENV_DIR.joinpath("bin", "pip3").as_posix()
 
     def __init__(self, charm):
@@ -66,13 +67,22 @@ class ArmadaAgentOps:
             "install",
             "-f",
             f"https://{pypi_username}:{pypi_password}@{url}",
-            self._ARMADA_AGENT_PACKAGE_NAME,
+            self._PACKAGE_NAME,
         ]
         out = subprocess.check_output(pip_install_cmd).decode().strip()
         if "Successfully installed" not in out:
             logger.error("Trouble installing armada-agent, please debug")
         else:
             logger.debug("armada-agent installed")
+
+        # Setup systemd service file
+        copy2(
+            "./src/templates/armada-agent.service",
+            self._SYSTEMD_SERVICE_FILE.as_posix()
+        )
+
+        # Enable the systemd service
+        self.systemctl("enable")
 
     def upgrade(self, version: str):
         """Upgrade armada-agent."""
@@ -87,7 +97,7 @@ class ArmadaAgentOps:
             "--upgrade",
             "-f",
             f"https://{pypi_username}:{pypi_password}@{url}",
-            f"{self._ARMADA_AGENT_PACKAGE_NAME}=={version}",
+            f"{self._PACKAGE_NAME}=={version}",
         ]
 
         out = subprocess.check_output(pip_install_cmd).decode().strip()
@@ -96,31 +106,29 @@ class ArmadaAgentOps:
         else:
             logger.debug("armada-agent installed")
 
-    def configure_etc_default(self):
+    def configure_env_defaults(self, ctxt):
         """Get the needed config, render and write out the file."""
-        charm_config = self._charm.model.config
-        jwt = charm_config.get("jwt")
-        api_key = charm_config.get("api-key")
-        backend_url = charm_config.get("backend-url")
-
-        log_base_dir = str(self._LOG_DIR)
+        api_key = ctxt.get("api_key")
+        base_api_url = ctxt.get("base_api_url")
+        log_dir = self._LOG_DIR.as_posix()
+        username = "root"
 
         ctxt = {
-            "backend_url": backend_url,
-            "jwt": jwt,
+            "base_api_url": base_api_url,
             "api_key": api_key,
-            "log_dir": log_base_dir,
+            "log_dir": log_dir,
+            "username": username
         }
 
-        etc_default_template = Path(
+        env_template = Path(
             "./src/templates/armada-agent.defaults.template").read_text()
 
-        rendered_template = etc_default_template.format(**ctxt)
+        rendered_template = env_template.format(**ctxt)
 
-        if self._ETC_DEFAULT.exists():
-            self._ETC_DEFAULT.unlink()
+        if self._ENV_DEFAULTS.exists():
+            self._ENV_DEFAULTS.unlink()
 
-        self._ETC_DEFAULT.write_text(rendered_template)
+        self._ENV_DEFAULTS.write_text(rendered_template)
 
     def systemctl(self, operation: str):
         """
@@ -136,12 +144,17 @@ class ArmadaAgentOps:
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
 
-
-
     def remove(self):
         """
         Remove the things we have created.
         """
-        self._ETC_DEFAULT.unlink()
+        self.systemctl("stop")
+        self.systemctl("disable")
+        if self._SYSTEMD_SERVICE_FILE.exists():
+            self._SYSTEMD_SERVICE_FILE.unlink()
+        subprocess.call([
+            "systemctl",
+            "daemon-reload"
+        ])
         rmtree(self._LOG_DIR.as_posix())
         rmtree(self._VENV_DIR.as_posix())

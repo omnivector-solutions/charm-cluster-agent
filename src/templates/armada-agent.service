@@ -1,0 +1,15 @@
+[Unit]
+Description=armada-agent
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/srv/armada-agent-venv
+ExecStart=/srv/armada-agent-venv/bin/uvicorn armada_agent.main:app --port 8080 --host 0.0.0.0
+
+[Install]
+Alias=armada-agent.service
+WantedBy=multi-user.target
+

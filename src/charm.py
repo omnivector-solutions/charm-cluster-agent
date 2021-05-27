@@ -23,9 +23,8 @@ class ArmadaAgentCharm(CharmBase):
         super().__init__(*args)
 
         self._stored.set_default(installed=False)
-        self._stored.set_default(jwt=str())
         self._stored.set_default(api_key=str())
-        self._stored.set_default(backend_url=str())
+        self._stored.set_default(bas_api_url=str())
         self._stored.set_default(config_available=False)
 
         self._armada_agent_ops = ArmadaAgentOps(self)
@@ -70,25 +69,24 @@ class ArmadaAgentCharm(CharmBase):
             self._stored.api_key = api_key_from_config
 
         # Get the backend-url from the charm config
-        backend_url_from_config = self.model.config.get("backend-url")
+        backend_url_from_config = self.model.config.get("base-api-url")
         if backend_url_from_config != self._stored.backend_url:
             self._stored.backend_url = backend_url_from_config
-
-        # Get the jwt from the charm config
-        jwt_from_config = self.model.config.get("jwt")
-        if jwt_from_config != self._stored.jwt:
-            self._stored.jwt = jwt_from_config
 
         all_configs = all([
             api_key_from_config,
             backend_url_from_config,
-            jwt_from_config,
         ])
         if not all_configs:
             event.defer()
             return
 
-        self._armada_agent_ops.configure_etc_defaults()
+        ctxt = {
+            "api_key": api_key_from_config,
+            "api_base_url": backend_url_from_config,
+        }
+
+        self._armada_agent_ops.configure_etc_defaults(ctxt)
         self._stored.config_available = True
 
     def _on_remove(self, event):
