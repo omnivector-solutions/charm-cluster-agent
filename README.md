@@ -17,9 +17,8 @@ charmcraft build
 
 ```yaml
 armada-agent:
-  jwt: "<slurmrestd-jwt>"
   api-key: "<backend api-key>"
-  backend-url: "<backend-url>"
+  base-api-url: "<base-api-url>"
   pypi-url: "<pypi-url>"
   pypi-username: "<pypi-username>"
   pypi-password: "<pypi-password>"
