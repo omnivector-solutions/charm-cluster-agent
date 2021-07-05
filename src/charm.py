@@ -60,6 +60,7 @@ class ArmadaAgentCharm(CharmBase):
             return
 
         self._armada_agent_ops.systemctl("start")
+        self.unit.status = ActiveStatus("armada-agent started")
 
     def _on_config_changed(self, event):
         """Configure armada-agent."""

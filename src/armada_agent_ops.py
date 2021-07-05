@@ -136,8 +136,6 @@ class ArmadaAgentOps:
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
 
-
-
     def remove(self):
         """
         Remove the things we have created.
