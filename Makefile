@@ -1,6 +1,7 @@
 # TARGETS
 charm: clean ## Build the charm
-	charmcraft build
+	charmcraft pack
+	cp armada-agent_ubuntu-20.04-amd64_centos-7-amd64.charm armada-agent.charm
 
 lint: ## Run linter
 	tox -e lint
@@ -8,7 +9,7 @@ lint: ## Run linter
 
 clean: ## Remove .tox and build dirs
 	rm -rf .tox/ venv/ build/
-	rm -f armada-agent.charm
+	rm -f *.charm
 
 
 format:
