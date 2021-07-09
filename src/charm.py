@@ -5,7 +5,7 @@ import logging
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus, WaitingStatus
+from ops.model import ActiveStatus, WaitingStatus, BlockedStatus
 
 from armada_agent_ops import ArmadaAgentOps
 
@@ -41,8 +41,13 @@ class ArmadaAgentCharm(CharmBase):
 
     def _on_install(self, event):
         """Install armada-agent."""
-        self._armada_agent_ops.install()
-        self._stored.installed = True
+        try:
+            self._armada_agent_ops.install()
+            self._stored.installed = True
+        except:
+            self._stored.installed = False
+            self.unit.status = BlockedStatus("Error installing armada-agent")
+            event.defer()
         # Log and set status
         logger.debug("armada-agent installed")
         self.unit.status = WaitingStatus("armada-agent installed")
@@ -96,7 +101,11 @@ class ArmadaAgentCharm(CharmBase):
 
     def _on_upgrade_action(self, event):
         version = event.params["version"]
-        self._armada_agent_ops.upgrade(version)
+        try:
+            self._armada_agent_ops.upgrade(version)
+        except:
+            self.unit.status = BlockedStatus("Error upgrading armada-agent")
+            event.defer()
 
 
 if __name__ == "__main__":

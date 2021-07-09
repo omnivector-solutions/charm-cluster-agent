@@ -71,10 +71,6 @@ class ArmadaAgentOps:
         ]
         out = subprocess.check_output(
             pip_install_pyyaml_uvicorn).decode().strip()
-        if "Successfully installed" not in out:
-            logger.error("Trouble installing uvicorn, pyyaml, please debug")
-        else:
-            logger.debug("uvicorn, pyyaml installed")
 
         # Install armada-agent
         pip_install_cmd = [
@@ -85,10 +81,6 @@ class ArmadaAgentOps:
             self._PACKAGE_NAME,
         ]
         out = subprocess.check_output(pip_install_cmd).decode().strip()
-        if "Successfully installed" not in out:
-            logger.error("Trouble installing armada-agent, please debug")
-        else:
-            logger.debug("armada-agent installed")
 
         # Setup systemd service file
         copy2(
@@ -110,10 +102,6 @@ class ArmadaAgentOps:
         ]
 
         out = subprocess.check_output(pip_install_cmd).decode().strip()
-        if "Successfully installed" not in out:
-            logger.error("Trouble upgrading armada-agent, please debug")
-        else:
-            logger.debug("armada-agent installed")
 
     def configure_env_defaults(self, ctxt):
         """Get the needed config, render and write out the file."""
