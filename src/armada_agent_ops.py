@@ -69,7 +69,7 @@ class ArmadaAgentOps:
             "uvicorn",
             "pyyaml",
         ]
-        out = subprocess.check_output(
+        subprocess.check_output(
             pip_install_pyyaml_uvicorn).decode().strip()
 
         # Install armada-agent
@@ -80,7 +80,7 @@ class ArmadaAgentOps:
             self._derived_pypi_url(),
             self._PACKAGE_NAME,
         ]
-        out = subprocess.check_output(pip_install_cmd).decode().strip()
+        subprocess.check_output(pip_install_cmd).decode().strip()
 
         # Setup systemd service file
         copy2(
@@ -101,7 +101,7 @@ class ArmadaAgentOps:
             f"{self._derived_pypi_url()}=={version}",
         ]
 
-        out = subprocess.check_output(pip_install_cmd).decode().strip()
+        subprocess.check_output(pip_install_cmd).decode().strip()
 
     def configure_env_defaults(self, ctxt):
         """Get the needed config, render and write out the file."""
