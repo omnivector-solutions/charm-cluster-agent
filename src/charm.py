@@ -48,6 +48,7 @@ class ArmadaAgentCharm(CharmBase):
             self._stored.installed = False
             self.unit.status = BlockedStatus("Error installing armada-agent")
             event.defer()
+            return
         # Log and set status
         logger.debug("armada-agent installed")
         self.unit.status = WaitingStatus("armada-agent installed")
@@ -74,7 +75,7 @@ class ArmadaAgentCharm(CharmBase):
         if api_key_from_config != self._stored.api_key:
             self._stored.api_key = api_key_from_config
 
-        # Get the backend-url from the charm config
+        # Get the base-api-url from the charm config
         base_api_url_from_config = self.model.config.get("base-api-url")
         if base_api_url_from_config != self._stored.base_api_url:
             self._stored.base_api_url = base_api_url_from_config
@@ -103,8 +104,10 @@ class ArmadaAgentCharm(CharmBase):
         version = event.params["version"]
         try:
             self._armada_agent_ops.upgrade(version)
+            event.set_results({"upgrade": "success"})
         except:
             self.unit.status = BlockedStatus("Error upgrading armada-agent")
+            event.fail(message="Error upgrading armada-agent")
             event.defer()
 
 
