@@ -3,7 +3,7 @@ charm: clean ## Build the charm
 	charmcraft build
 
 lint: ## Run linter
-	tox -e lint -- --ignore=E722
+	tox -e lint
 
 
 clean: ## Remove .tox and build dirs
