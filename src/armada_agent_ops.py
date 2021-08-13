@@ -149,9 +149,6 @@ class ArmadaAgentOps:
         self.systemctl("disable")
         if self._SYSTEMD_SERVICE_FILE.exists():
             self._SYSTEMD_SERVICE_FILE.unlink()
-        subprocess.call([
-            "systemctl",
-            "daemon-reload"
-        ])
+        subprocess.call(["systemctl", "daemon-reload"])
         rmtree(self._LOG_DIR.as_posix())
         rmtree(self._VENV_DIR.as_posix())
