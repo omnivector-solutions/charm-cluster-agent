@@ -13,7 +13,7 @@ options:
     type: string
     default:
     description: |
-      Full PYPI URL (with HTTPS protocol) e.g. https://pypi.org/simple
+      Base pypi url, e.g. https://mypypi.example.com
   pypi-username:
     type: string
     default:
