@@ -29,6 +29,7 @@ class ArmadaAgentOps:
         self._charm = charm
 
     def _derived_pypi_url(self):
+        """Derive the pypi package url from the the supplied config and package name."""
         url = self._charm.model.config["pypi-url"]
         url = url.split("://")[1]
         pypi_username = self._charm.model.config["pypi-username"]
