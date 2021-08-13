@@ -3,12 +3,12 @@ options:
     type: string
     default:
     description: |
-      The backend api-key
-  base-api-url:
+      The backend api-key.
+  backend-url:
     type: string
     default:
     description: |
-      The armada-api backend url
+      The armada-api backend url.
   pypi-url:
     type: string
     default:
@@ -18,7 +18,7 @@ options:
     type: string
     default:
     description: |
-      PYPI USERNAME
+      PYPI username in plain text.
   pypi-password:
     type: string
     default:

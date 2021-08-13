@@ -63,12 +63,12 @@ class ArmadaAgentOps:
     def configure_env_defaults(self, ctxt):
         """Get the needed config, render and write out the file."""
         api_key = ctxt.get("api_key")
-        base_api_url = ctxt.get("base_api_url")
+        backend_url = ctxt.get("backend_url")
         log_dir = self._LOG_DIR.as_posix()
         username = "root"
 
         ctxt = {
-            "base_api_url": base_api_url,
+            "backend_url": backend_url,
             "api_key": api_key,
             "log_dir": log_dir,
             "username": username

@@ -24,7 +24,7 @@ class ArmadaAgentCharm(CharmBase):
 
         self._stored.set_default(installed=False)
         self._stored.set_default(api_key=str())
-        self._stored.set_default(base_api_url=str())
+        self._stored.set_default(backend_url=str())
         self._stored.set_default(config_available=False)
 
         self._armada_agent_ops = ArmadaAgentOps(self)
@@ -75,22 +75,18 @@ class ArmadaAgentCharm(CharmBase):
         if api_key_from_config != self._stored.api_key:
             self._stored.api_key = api_key_from_config
 
-        # Get the base-api-url from the charm config
-        base_api_url_from_config = self.model.config.get("base-api-url")
-        if base_api_url_from_config != self._stored.base_api_url:
-            self._stored.base_api_url = base_api_url_from_config
+        # Get the backend-url from the charm config
+        backend_url_from_config = self.model.config.get("backend-url")
+        if backend_url_from_config != self._stored.backend_url:
+            self._stored.backend_url = backend_url_from_config
 
-        all_configs = all([
-            api_key_from_config,
-            base_api_url_from_config,
-        ])
-        if not all_configs:
+        if not all([api_key_from_config, backend_url_from_config]):
             event.defer()
             return
 
         ctxt = {
             "api_key": api_key_from_config,
-            "base_api_url": base_api_url_from_config,
+            "backend_url": backend_url_from_config,
         }
 
         self._armada_agent_ops.configure_env_defaults(ctxt)
