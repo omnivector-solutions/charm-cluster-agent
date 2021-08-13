@@ -52,7 +52,7 @@ class ArmadaAgentOps:
         # Install armada-agent
         self._install_armada_agent()
         # Install additional dependencies.
-        self._install_extra_deps
+        self._install_extra_deps()
         # Provision the armada-agent systemd service.
         self._setup_systemd()
 
