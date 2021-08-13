@@ -126,6 +126,9 @@ class ArmadaAgentOps:
             f"--gid {self._ARMADA_GROUP} --shell /usr/sbin/nologin {self._ARMADA_USER}"
         )
         subprocess.call(shlex.split(cmd))
+        # Add the 'armada_agent' user to sudo.
+        # This is needed because the armada_agent user need to create tokens for the root user.
+        subprocess.call(shlex.split(f"usermod -aG sudo {self.ARMADA_USER}"))
 
     def _create_and_permission_armada_agent_log_dir(self):
         """Create the log dir and make sure it's owned by armada_agent:armada_agent."""
