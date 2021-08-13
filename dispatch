@@ -27,6 +27,7 @@ if ! [[ -f '.installed' ]]; then
             exit -1
         fi
     else
+    	echo "Running Ubuntu, installing python3-venv"
 	apt update
 	apt install -y python3-venv
     fi
