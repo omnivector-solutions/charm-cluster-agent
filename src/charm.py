@@ -5,7 +5,7 @@ import logging
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus, WaitingStatus
+from ops.model import ActiveStatus, WaitingStatus, BlockedStatus
 
 from armada_agent_ops import ArmadaAgentOps
 
@@ -23,7 +23,6 @@ class ArmadaAgentCharm(CharmBase):
         super().__init__(*args)
 
         self._stored.set_default(installed=False)
-        self._stored.set_default(jwt=str())
         self._stored.set_default(api_key=str())
         self._stored.set_default(backend_url=str())
         self._stored.set_default(config_available=False)
@@ -42,8 +41,14 @@ class ArmadaAgentCharm(CharmBase):
 
     def _on_install(self, event):
         """Install armada-agent."""
-        self._armada_agent_ops.install()
-        self._stored.installed = True
+        try:
+            self._armada_agent_ops.install()
+            self._stored.installed = True
+        except:
+            self._stored.installed = False
+            self.unit.status = BlockedStatus("Error installing armada-agent")
+            event.defer()
+            return
         # Log and set status
         logger.debug("armada-agent installed")
         self.unit.status = WaitingStatus("armada-agent installed")
@@ -75,21 +80,16 @@ class ArmadaAgentCharm(CharmBase):
         if backend_url_from_config != self._stored.backend_url:
             self._stored.backend_url = backend_url_from_config
 
-        # Get the jwt from the charm config
-        jwt_from_config = self.model.config.get("jwt")
-        if jwt_from_config != self._stored.jwt:
-            self._stored.jwt = jwt_from_config
-
-        all_configs = all([
-            api_key_from_config,
-            backend_url_from_config,
-            jwt_from_config,
-        ])
-        if not all_configs:
+        if not all([api_key_from_config, backend_url_from_config]):
             event.defer()
             return
 
-        self._armada_agent_ops.configure_etc_defaults()
+        ctxt = {
+            "api_key": api_key_from_config,
+            "backend_url": backend_url_from_config,
+        }
+
+        self._armada_agent_ops.configure_env_defaults(ctxt)
         self._stored.config_available = True
 
     def _on_remove(self, event):
@@ -98,7 +98,13 @@ class ArmadaAgentCharm(CharmBase):
 
     def _on_upgrade_action(self, event):
         version = event.params["version"]
-        self._armada_agent_ops.upgrade(version)
+        try:
+            self._armada_agent_ops.upgrade(version)
+            event.set_results({"upgrade": "success"})
+        except:
+            self.unit.status = BlockedStatus("Error upgrading armada-agent")
+            event.fail(message="Error upgrading armada-agent")
+            event.defer()
 
 
 if __name__ == "__main__":
