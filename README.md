@@ -18,10 +18,21 @@ charmcraft build
 ```yaml
 armada-agent:
   api-key: "<backend api-key>"
-  base-api-url: "<base-api-url>"
+  backend-url: "<backend-url>"
   pypi-url: "<pypi-url>"
   pypi-username: "<pypi-username>"
   pypi-password: "<pypi-password>"
+```
+
+e.g.
+
+```yaml
+armada-agent:
+  backend-url: https://armada-example.omnivector.solutions
+  api-key: UJiPxK96-LcbMRuvxwzM
+  pypi-url: https://pypicloud.omnivector.solutions
+  pypi-username: admin
+  pypi-password: o*.k.sFCHBMaHkWcV9zr
 ```
 
 ### Deploy the charm
