@@ -6,33 +6,60 @@ set -e
 # Source the os-release information into the env.
 . /etc/os-release
 
-if ! [[ -f '.installed' ]]; then
+
+if [ ! -f '.installed' ]
+then
     # Determine if we are running in centos or ubuntu, if centos
     # provision the needed prereqs.
-    if [[ $ID == 'centos' ]]; then 
+    if [ $ID = 'centos' ]
+    then
         # Determine the centos version and install prereqs accordingly
-        major=$(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1)
-        if [[ $major == "7" ]]; then
+        major=$(cat /etc/centos-release | tr -dc '0-9.'| cut -d \. -f1)
+        if [ $major = "7" ]
+        then
             # Install yaml deps
             yum -y install libyaml-devel
             # Install python3 using yum (will install python3.6 on centos7)
-            if ! type -a python3; then
+            if [ ! -e /usr/bin/python3 ]
+            then
                 echo "Running centos$major, installing prereqs."
                 # Install system python3
                 yum -y install epel-release
                 yum -y install python3
+            fi
+            # We need python3.8 to run armada-agent.
+            # Install python3.8 from source.
+            if [ ! -e /usr/bin/python3.8 ]
+            then
+		yum install -y gcc zlib-devel bzip2 bzip2-devel readline-devel \
+			sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz-devel wget
+                yum groupinstall "Development tools" -y
+                /bin/bash ./src/templates/install_python.sh
             fi
         else
             echo "Running unsuppored version of centos: $major"
             exit -1
         fi
     else
-    	echo "Running Ubuntu, installing python3-venv"
-	apt update
-	apt install -y python3-venv
+        # We are running an ubuntu os, so check for python and install the
+        # needed venv package or python3 from source, depending on what already
+        # exists on the system.
+        #
+        if [ ! -e /usr/bin/python3.8 ]
+        then
+	    apt install -y make build-essential libssl-dev zlib1g-dev \
+	    libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
+	    libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
+
+            /bin/bash ./src/templates/install_python.sh
+        else
+            if [ ! -e /usr/bin/pip3 ]
+            then
+                apt install -y python3.8-venv
+            fi
+        fi
     fi
     touch .installed
 fi
 
 JUJU_DISPATCH_PATH="${JUJU_DISPATCH_PATH:-$0}" PYTHONPATH=lib:venv ./src/charm.py
-
