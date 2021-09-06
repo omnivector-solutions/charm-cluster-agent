@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 PYTHON_VERSION="3.8.10"
 
 echo "Downloading and installing Python $PYTHON_VERSION"
