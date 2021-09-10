@@ -113,37 +113,69 @@ class ArmadaAgentOps:
         rmtree(self._LOG_DIR.as_posix())
         rmtree(self._VENV_DIR.as_posix())
         # Delete the user and group
-        subprocess.call(["userdel", self._ARMADA_USER])
-        subprocess.call(["groupdel", self._ARMADA_GROUP])
+        subprocess.call(["userdel", self._ARMADA_AGENT_USER])
+        subprocess.call(["groupdel", self._ARMADA_AGENT_GROUP])
 
     def _create_armada_agent_user_group(self):
         logger.debug("## Creating the armada_agent group")
-        cmd = f"groupadd {self._ARMADA_GROUP}"
-        subprocess.call(shlex.split(cmd))
+        cmd = f"groupadd {self._ARMADA_AGENT_GROUP}"
+        try:
+            subprocess.check_output(shlex.split(cmd))
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 9:
+                logger.debug("## Group already exists")
+            else:
+                logger.error(f"## Error creating armada group: {e}")
+                raise e
 
         logger.debug("## Creating armada_agent user")
         cmd = (
             "useradd --system --no-create-home "
-            f"--gid {self._ARMADA_GROUP} --shell /usr/sbin/nologin {self._ARMADA_USER}"
+            f"--gid {self._ARMADA_AGENT_GROUP} --shell /usr/sbin/nologin {self._ARMADA_AGENT_USER}"
         )
-        subprocess.call(shlex.split(cmd))
+        try:
+            subprocess.check_output(shlex.split(cmd))
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 9:
+                logger.debug("## User already exists")
+            else:
+                logger.error(f"## Error creating armada User: {e}")
+                raise e
+
+        logger.debug(f"## Adding armada_agent user to {self._sudo_group} group")
         # Add the 'armada_agent' user to sudo.
         # This is needed because the armada_agent user need to create tokens for the root user.
-        subprocess.call(shlex.split(f"usermod -aG sudo {self.ARMADA_USER}"))
+        subprocess.call(shlex.split(f"usermod -aG {self._sudo_group} {self._ARMADA_AGENT_USER}"))
+        logger.debug(f"## armada_agent user added to {self._sudo_group} group")
+
+    @property
+    def _sudo_group(self) -> str:
+        os_release = Path("/etc/os-release").read_text().split("\n")
+        os_release_ctxt = {k: v.strip("\"")
+                           for k, v in [item.split("=") for item in os_release if item != '']}
+
+        # we need to take care of this corner case. All other OSes use "wheel"...
+        if os_release_ctxt["ID"] == "ubuntu":
+            return "sudo"
+
+        return "wheel"
 
     def _create_and_permission_armada_agent_log_dir(self):
         """Create the log dir and make sure it's owned by armada_agent:armada_agent."""
         if not self._LOG_DIR.exists():
+            logger.debug(f"## Creating {self._LOG_DIR}")
             self._LOG_DIR.mkdir(parents=True)
+
+        logger.debug(f"## Setting permissions for {self._LOG_DIR}")
         subprocess.call(
             [
                 "chown",
                 "-R",
-                f"{self._ARMADA_USER}:{self._ARMADA_GROUP}",
+                f"{self._ARMADA_AGENT_USER}:{self._ARMADA_AGENT_GROUP}",
                 self._LOG_DIR.as_posix()
             ]
         )
-        logger.debug("armada-agent log dir created and permissioned.")
+        logger.debug("## armada-agent log dir created and permissioned")
 
     def _create_venv_and_ensure_latest_pip(self):
         """Create the virtualenv and upgrade pip."""
@@ -155,8 +187,9 @@ class ArmadaAgentOps:
             "venv",
             self._VENV_DIR.as_posix(),
         ]
+        logger.debug(f"## Creating virtualenv: {create_venv_cmd }")
         subprocess.call(create_venv_cmd)
-        logger.debug("armada-agent virtualenv created")
+        logger.debug("## armada-agent virtualenv created")
 
         # Ensure we have the latest pip
         upgrade_pip_cmd = [
@@ -165,24 +198,28 @@ class ArmadaAgentOps:
             "--upgrade",
             "pip",
         ]
+        logger.debug(f"## Updating pip: {upgrade_pip_cmd}")
         subprocess.call(upgrade_pip_cmd)
+        logger.debug("## Pip upgraded")
 
     def _setup_systemd(self):
         """Provision the armada-agent systemd service."""
-        # Copy the service file.
+        logger.debug(f"## Setting SystemD service: {self._SYSTEMD_SERVICE_FILE}")
         if self._SYSTEMD_SERVICE_FILE.exists():
             self._SYSTEMD_SERVICE_FILE.unlink()
         copy2(
             "./src/templates/armada-agent.service",
             self._SYSTEMD_SERVICE_FILE.as_posix()
         )
-        # Enable the systemd service.
+        logger.debug("## Enabling Armada service")
         self.systemctl("enable")
+        logger.debug("## Armada service enabled")
 
     def _install_extra_deps(self):
         """Install additional dependencies."""
         # Install uvicorn and pyyaml
         cmd = [self._PIP_CMD, "install", "uvicorn", "pyyaml"]
+        logger.debug(f"## Installing exra dependencies: {cmd}")
         try:
             subprocess.call(cmd)
         except subprocess.CalledProcessError as e:
@@ -192,6 +229,7 @@ class ArmadaAgentOps:
     def _install_armada_agent(self):
         """Install the armada-agent package."""
         cmd = [self._PIP_CMD, "install", "-f", self._derived_pypi_url(), self._PACKAGE_NAME]
+        logger.debug(f"## Installing armada: {cmd}")
         try:
             subprocess.call([shlex.quote(item) for item in cmd])
         except subprocess.CalledProcessError as e:
