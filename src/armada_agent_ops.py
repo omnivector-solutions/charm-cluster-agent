@@ -23,7 +23,8 @@ class ArmadaAgentOps:
     _SYSTEMD_SERVICE_FILE = _SYSTEMD_BASE_PATH / f"{_PACKAGE_NAME}.service"
     _VENV_DIR = Path("/srv/armada-agent-venv")
     _ENV_DEFAULTS = _VENV_DIR / ".env"
-    _PIP_CMD = _VENV_DIR.joinpath("bin", "pip3").as_posix()
+    _PIP_CMD = _VENV_DIR.joinpath("bin", "pip3.8").as_posix()
+    _PYTHON_CMD = Path("/usr/bin/python3.8")
 
     _ARMADA_AGENT_USER = "armada_agent"
     _ARMADA_AGENT_GROUP = _ARMADA_AGENT_USER
@@ -149,7 +150,7 @@ class ArmadaAgentOps:
 
         # Create the virtualenv
         create_venv_cmd = [
-            "python3",
+            self._PYTHON_CMD,
             "-m",
             "venv",
             self._VENV_DIR.as_posix(),
