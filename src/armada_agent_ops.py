@@ -231,7 +231,7 @@ class ArmadaAgentOps:
         cmd = [self._PIP_CMD, "install", "-f", self._derived_pypi_url(), self._PACKAGE_NAME]
         logger.debug(f"## Installing armada: {cmd}")
         try:
-            subprocess.call([shlex.quote(item) for item in cmd])
+            subprocess.call(cmd)
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
@@ -247,7 +247,7 @@ class ArmadaAgentOps:
         ]
 
         try:
-            subprocess.call([shlex.quote(item) for item in cmd])
+            subprocess.call(cmd)
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
