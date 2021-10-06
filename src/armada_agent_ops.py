@@ -32,15 +32,25 @@ class ArmadaAgentOps:
     def __init__(self, charm):
         """Initialize armada-agent-ops."""
         self._charm = charm
+    
+    def _get_authorization_token(self):
+        """Get authorization token for installing armada-agent from CodeArtifact"""
+        import boto3
+        domain = self._charm.model.config["package-url"].split("-")[0]
+        sts = boto3.client(
+            'sts',
+            aws_access_key_id=self._charm.model.config["aws-access-key-id"],
+            aws_secret_access_key=self._charm.model.config["aws-secret-access-key"]
+        )
+        session_token = sts.get_session_token().get("SessionToken")
+        codeartifact_auth_token = codeartifact_auth_token.get_authorization_token(domain=domain)
+        return codeartifact_auth_token.get("authorizationToken")
 
-    def _derived_pypi_url(self):
+    def _derived_package_url(self):
         """Derive the pypi package url from the the supplied config and package name."""
-        url = self._charm.model.config["pypi-url"]
-        url = url.split("://")[1]
-        pypi_username = self._charm.model.config["pypi-username"]
-        pypi_password = self._charm.model.config["pypi-password"]
-        return (f"https://{pypi_username}:{pypi_password}@"
-                f"{url}/simple/{self._PACKAGE_NAME}")
+        package_url = self._charm.model.config["package-url"]
+        authozation_token = self._get_authorization_token()
+        return f"https://aws:{authozation_token}@{package_url}"
 
     def install(self):
         """Install armada-agent and setup ops."""
@@ -50,10 +60,10 @@ class ArmadaAgentOps:
         self._create_and_permission_armada_agent_log_dir()
         # Create the virtualenv and ensure pip is up to date.
         self._create_venv_and_ensure_latest_pip()
-        # Install armada-agent
-        self._install_armada_agent()
         # Install additional dependencies.
         self._install_extra_deps()
+        # Install armada-agent
+        self._install_armada_agent()
         # Provision the armada-agent systemd service.
         self._setup_systemd()
 
@@ -218,7 +228,7 @@ class ArmadaAgentOps:
     def _install_extra_deps(self):
         """Install additional dependencies."""
         # Install uvicorn and pyyaml
-        cmd = [self._PIP_CMD, "install", "uvicorn", "pyyaml"]
+        cmd = [self._PIP_CMD, "install", "uvicorn", "pyyaml", "boto3==1.18.55"]
         logger.debug(f"## Installing exra dependencies: {cmd}")
         try:
             subprocess.call(cmd)
@@ -228,7 +238,7 @@ class ArmadaAgentOps:
 
     def _install_armada_agent(self):
         """Install the armada-agent package."""
-        cmd = [self._PIP_CMD, "install", "-f", self._derived_pypi_url(), self._PACKAGE_NAME]
+        cmd = [self._PIP_CMD, "install", "-U", "-i", self._derived_package_url(), self._PACKAGE_NAME]
         logger.debug(f"## Installing armada: {cmd}")
         try:
             subprocess.call(cmd)
@@ -241,9 +251,10 @@ class ArmadaAgentOps:
         cmd = [
             self._PIP_CMD,
             "install",
-            "--upgrade",
-            "-f",
-            f"{self._derived_pypi_url()}=={version}",
+            "-U",
+            "-i",
+            self._derived_package_url(),
+            f"{self._PACKAGE_NAME}=={version}"
         ]
 
         try:
