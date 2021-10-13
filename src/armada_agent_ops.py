@@ -2,6 +2,7 @@
 ArmadaAgentOps.
 """
 import logging
+import os
 import shlex
 import subprocess
 
@@ -35,22 +36,33 @@ class ArmadaAgentOps:
     
     def _get_authorization_token(self):
         """Get authorization token for installing armada-agent from CodeArtifact"""
-        import boto3
+
+        os.environ["AWS_ACCESS_KEY_ID"] = self._charm.model.config["aws-access-key-id"]
+        os.environ["AWS_SECRET_ACCESS_KEY"] = self._charm.model.config["aws-secret-access-key"]
+
         domain = self._charm.model.config["package-url"].split("-")[0]
-        sts = boto3.client(
-            'sts',
-            aws_access_key_id=self._charm.model.config["aws-access-key-id"],
-            aws_secret_access_key=self._charm.model.config["aws-secret-access-key"]
-        )
-        session_token = sts.get_session_token().get("SessionToken")
-        codeartifact_auth_token = codeartifact_auth_token.get_authorization_token(domain=domain)
+
+        import boto3
+
+        sts = boto3.client('sts')
+        session_token_payload = sts.get_session_token()
+
+        os.environ["AWS_ACCESS_KEY_ID"] = session_token_payload.get("Credentials").get("AccessKeyId")
+        os.environ["AWS_SECRET_ACCESS_KEY"] = session_token_payload.get("Credentials").get("SecretAccessKey")
+        os.environ["AWS_SESSION_TOKEN"] = session_token_payload.get("Credentials").get("SessionToken")
+        os.environ["AWS_DEFAULT_REGION"] = self._charm.model.config["aws-region"]
+
+        code_artifact = boto3.client('codeartifact')
+
+        codeartifact_auth_token = code_artifact.get_authorization_token(domain=domain)
         return codeartifact_auth_token.get("authorizationToken")
 
     def _derived_package_url(self):
         """Derive the pypi package url from the the supplied config and package name."""
         package_url = self._charm.model.config["package-url"]
         authozation_token = self._get_authorization_token()
-        return f"https://aws:{authozation_token}@{package_url}"
+        pypi_url = f"https://aws:{authozation_token}@{package_url}"
+        return pypi_url
 
     def install(self):
         """Install armada-agent and setup ops."""
