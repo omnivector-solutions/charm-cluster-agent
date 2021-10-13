@@ -24,3 +24,8 @@ options:
     default:
     description: |
       AWS secret access key in plain text.
+  aws-region:
+    type: string
+    default: us-west-2
+    description: |
+      AWS region to which install the Armada agent package
