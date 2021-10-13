@@ -33,26 +33,34 @@ class ArmadaAgentOps:
     def __init__(self, charm):
         """Initialize armada-agent-ops."""
         self._charm = charm
-    
+
     def _get_authorization_token(self):
         """Get authorization token for installing armada-agent from CodeArtifact"""
 
         os.environ["AWS_ACCESS_KEY_ID"] = self._charm.model.config["aws-access-key-id"]
-        os.environ["AWS_SECRET_ACCESS_KEY"] = self._charm.model.config["aws-secret-access-key"]
+        os.environ["AWS_SECRET_ACCESS_KEY"] = self._charm.model.config[
+            "aws-secret-access-key"
+        ]
 
         domain = self._charm.model.config["package-url"].split("-")[0]
 
         import boto3
 
-        sts = boto3.client('sts')
+        sts = boto3.client("sts")
         session_token_payload = sts.get_session_token()
 
-        os.environ["AWS_ACCESS_KEY_ID"] = session_token_payload.get("Credentials").get("AccessKeyId")
-        os.environ["AWS_SECRET_ACCESS_KEY"] = session_token_payload.get("Credentials").get("SecretAccessKey")
-        os.environ["AWS_SESSION_TOKEN"] = session_token_payload.get("Credentials").get("SessionToken")
+        os.environ["AWS_ACCESS_KEY_ID"] = session_token_payload.get("Credentials").get(
+            "AccessKeyId"
+        )
+        os.environ["AWS_SECRET_ACCESS_KEY"] = session_token_payload.get(
+            "Credentials"
+        ).get("SecretAccessKey")
+        os.environ["AWS_SESSION_TOKEN"] = session_token_payload.get("Credentials").get(
+            "SessionToken"
+        )
         os.environ["AWS_DEFAULT_REGION"] = self._charm.model.config["aws-region"]
 
-        code_artifact = boto3.client('codeartifact')
+        code_artifact = boto3.client("codeartifact")
 
         codeartifact_auth_token = code_artifact.get_authorization_token(domain=domain)
         return codeartifact_auth_token.get("authorizationToken")
@@ -94,11 +102,12 @@ class ArmadaAgentOps:
             "backend_url": backend_url,
             "api_key": api_key,
             "log_dir": log_dir,
-            "username": username
+            "username": username,
         }
 
         env_template = Path(
-            "./src/templates/armada-agent.defaults.template").read_text()
+            "./src/templates/armada-agent.defaults.template"
+        ).read_text()
 
         rendered_template = env_template.format(**ctxt)
 
@@ -167,14 +176,18 @@ class ArmadaAgentOps:
         logger.debug(f"## Adding armada_agent user to {self._sudo_group} group")
         # Add the 'armada_agent' user to sudo.
         # This is needed because the armada_agent user need to create tokens for the root user.
-        subprocess.call(shlex.split(f"usermod -aG {self._sudo_group} {self._ARMADA_AGENT_USER}"))
+        subprocess.call(
+            shlex.split(f"usermod -aG {self._sudo_group} {self._ARMADA_AGENT_USER}")
+        )
         logger.debug(f"## armada_agent user added to {self._sudo_group} group")
 
     @property
     def _sudo_group(self) -> str:
         os_release = Path("/etc/os-release").read_text().split("\n")
-        os_release_ctxt = {k: v.strip("\"")
-                           for k, v in [item.split("=") for item in os_release if item != '']}
+        os_release_ctxt = {
+            k: v.strip('"')
+            for k, v in [item.split("=") for item in os_release if item != ""]
+        }
 
         # we need to take care of this corner case. All other OSes use "wheel"...
         if os_release_ctxt["ID"] == "ubuntu":
@@ -194,7 +207,7 @@ class ArmadaAgentOps:
                 "chown",
                 "-R",
                 f"{self._ARMADA_AGENT_USER}:{self._ARMADA_AGENT_GROUP}",
-                self._LOG_DIR.as_posix()
+                self._LOG_DIR.as_posix(),
             ]
         )
         logger.debug("## armada-agent log dir created and permissioned")
@@ -231,7 +244,7 @@ class ArmadaAgentOps:
             self._SYSTEMD_SERVICE_FILE.unlink()
         copy2(
             "./src/templates/armada-agent.service",
-            self._SYSTEMD_SERVICE_FILE.as_posix()
+            self._SYSTEMD_SERVICE_FILE.as_posix(),
         )
         logger.debug("## Enabling Armada service")
         self.systemctl("enable")
@@ -250,7 +263,14 @@ class ArmadaAgentOps:
 
     def _install_armada_agent(self):
         """Install the armada-agent package."""
-        cmd = [self._PIP_CMD, "install", "-U", "-i", self._derived_package_url(), self._PACKAGE_NAME]
+        cmd = [
+            self._PIP_CMD,
+            "install",
+            "-U",
+            "-i",
+            self._derived_package_url(),
+            self._PACKAGE_NAME,
+        ]
         logger.debug(f"## Installing armada: {cmd}")
         try:
             subprocess.call(cmd)
@@ -266,7 +286,7 @@ class ArmadaAgentOps:
             "-U",
             "-i",
             self._derived_package_url(),
-            f"{self._PACKAGE_NAME}=={version}"
+            f"{self._PACKAGE_NAME}=={version}",
         ]
 
         try:
