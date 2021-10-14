@@ -11,3 +11,7 @@ tags:
 series:
     - centos7
     - focal
+
+provides:
+  user-group:
+    interface: user-group

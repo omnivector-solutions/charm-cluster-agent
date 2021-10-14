@@ -8,6 +8,7 @@ from ops.main import main
 from ops.model import ActiveStatus, WaitingStatus, BlockedStatus
 
 from armada_agent_ops import ArmadaAgentOps
+from interface_user_group import UserGroupProvides
 
 
 logger = logging.getLogger()
@@ -28,6 +29,7 @@ class ArmadaAgentCharm(CharmBase):
         self._stored.set_default(config_available=False)
 
         self._armada_agent_ops = ArmadaAgentOps(self)
+        self._user_group = UserGroupProvides(self, 'user-group')
 
         event_handler_bindings = {
             self.on.install: self._on_install,
