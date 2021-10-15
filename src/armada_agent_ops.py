@@ -66,7 +66,7 @@ class ArmadaAgentOps:
         api_key = ctxt.get("api_key")
         backend_url = ctxt.get("backend_url")
         log_dir = self._LOG_DIR.as_posix()
-        username = "root"
+        username = self._ARMADA_AGENT_USER
 
         ctxt = {
             "backend_url": backend_url,
