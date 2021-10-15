@@ -35,13 +35,13 @@ class UserGroupProvides(Object):
         """Create the user and group sent by the provides side of the relation."""
         self._relation.data[self.model.app]["user"] = "armada_agent"
         self._relation.data[self.model.app]["group"] = "armada_agent"
-    
+
     def _on_relation_changed(self, event):
-        if self._relation.data[self.model.app]["status"] == True:
+        if self._relation.data[self.model.app]["status"]:
             logger.info("## Starting Armada agent")
             self._charm._armada_agent_ops.systemctl("start")
             self._charm.unit.status = ActiveStatus("armada agent started")
-        
+
         logger.info("## Armada agent wasn't started")
 
     def _on_relation_broken(self, event):
