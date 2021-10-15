@@ -5,7 +5,7 @@ import logging
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
-from ops.model import ActiveStatus, WaitingStatus, BlockedStatus
+from ops.model import BlockedStatus, WaitingStatus
 
 from armada_agent_ops import ArmadaAgentOps
 from interface_user_group import UserGroupProvides
@@ -29,7 +29,7 @@ class ArmadaAgentCharm(CharmBase):
         self._stored.set_default(config_available=False)
 
         self._armada_agent_ops = ArmadaAgentOps(self)
-        self._user_group = UserGroupProvides(self, 'user-group')
+        self._user_group = UserGroupProvides(self, "user-group")
 
         event_handler_bindings = {
             self.on.install: self._on_install,
@@ -66,8 +66,7 @@ class ArmadaAgentCharm(CharmBase):
             event.defer()
             return
 
-        self._armada_agent_ops.systemctl("start")
-        self.unit.status = ActiveStatus("armada-agent started")
+        self.unit.status = WaitingStatus("waiting relation with slurmctld")
 
     def _on_config_changed(self, event):
         """Configure armada-agent."""

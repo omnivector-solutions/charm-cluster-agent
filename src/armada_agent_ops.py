@@ -2,12 +2,10 @@
 ArmadaAgentOps.
 """
 import logging
-import shlex
-import subprocess
-
-from shutil import rmtree, copy2
-
 from pathlib import Path
+import shlex
+from shutil import copy2, rmtree
+import subprocess
 
 
 logger = logging.getLogger()
@@ -39,8 +37,7 @@ class ArmadaAgentOps:
         url = url.split("://")[1]
         pypi_username = self._charm.model.config["pypi-username"]
         pypi_password = self._charm.model.config["pypi-password"]
-        return (f"https://{pypi_username}:{pypi_password}@"
-                f"{url}/simple/{self._PACKAGE_NAME}")
+        return f"https://{pypi_username}:{pypi_password}@" f"{url}/simple/{self._PACKAGE_NAME}"
 
     def install(self):
         """Install armada-agent and setup ops."""
@@ -72,11 +69,10 @@ class ArmadaAgentOps:
             "backend_url": backend_url,
             "api_key": api_key,
             "log_dir": log_dir,
-            "username": username
+            "username": username,
         }
 
-        env_template = Path(
-            "./src/templates/armada-agent.defaults.template").read_text()
+        env_template = Path("./src/templates/armada-agent.defaults.template").read_text()
 
         rendered_template = env_template.format(**ctxt)
 
@@ -151,8 +147,7 @@ class ArmadaAgentOps:
     @property
     def _sudo_group(self) -> str:
         os_release = Path("/etc/os-release").read_text().split("\n")
-        os_release_ctxt = {k: v.strip("\"")
-                           for k, v in [item.split("=") for item in os_release if item != '']}
+        os_release_ctxt = {k: v.strip('"') for k, v in [item.split("=") for item in os_release if item != ""]}
 
         # we need to take care of this corner case. All other OSes use "wheel"...
         if os_release_ctxt["ID"] == "ubuntu":
@@ -172,7 +167,7 @@ class ArmadaAgentOps:
                 "chown",
                 "-R",
                 f"{self._ARMADA_AGENT_USER}:{self._ARMADA_AGENT_GROUP}",
-                self._LOG_DIR.as_posix()
+                self._LOG_DIR.as_posix(),
             ]
         )
         logger.debug("## armada-agent log dir created and permissioned")
@@ -209,7 +204,7 @@ class ArmadaAgentOps:
             self._SYSTEMD_SERVICE_FILE.unlink()
         copy2(
             "./src/templates/armada-agent.service",
-            self._SYSTEMD_SERVICE_FILE.as_posix()
+            self._SYSTEMD_SERVICE_FILE.as_posix(),
         )
         logger.debug("## Enabling Armada service")
         self.systemctl("enable")
@@ -228,7 +223,13 @@ class ArmadaAgentOps:
 
     def _install_armada_agent(self):
         """Install the armada-agent package."""
-        cmd = [self._PIP_CMD, "install", "-f", self._derived_pypi_url(), self._PACKAGE_NAME]
+        cmd = [
+            self._PIP_CMD,
+            "install",
+            "-f",
+            self._derived_pypi_url(),
+            self._PACKAGE_NAME,
+        ]
         logger.debug(f"## Installing armada: {cmd}")
         try:
             subprocess.call(cmd)
