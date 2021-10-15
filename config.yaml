@@ -9,18 +9,23 @@ options:
     default:
     description: |
       The armada-api backend url.
-  pypi-url:
+  package-url:
+    type: string
+    default: private-212021838531.d.codeartifact.us-west-2.amazonaws.com/pypi/armada-agent/simple/
+    description: |
+      Armada agent package url without protocol, e.g. <some aewsome domain>-<aws account id>.d.codeartifact.us-west-2.amazonaws.com/pypi/armada-agent/simple/
+  aws-access-key-id:
     type: string
     default:
     description: |
-      Base pypi url, e.g. https://mypypi.example.com
-  pypi-username:
+      AWS access key ID in plain text.
+  aws-secret-access-key:
     type: string
     default:
     description: |
-      PYPI username in plain text.
-  pypi-password:
+      AWS secret access key in plain text.
+  aws-region:
     type: string
-    default:
+    default: us-west-2
     description: |
-      PYPI password in plain text.
+      AWS region to which install the Armada agent package
