@@ -23,6 +23,10 @@ class UserGroupProvides(Object):
             self._on_relation_changed,
         )
         self.framework.observe(
+            self._charm.on[self._relation_name].relation_departed,
+            self._on_relation_departed,
+        )
+        self.framework.observe(
             self._charm.on[self._relation_name].relation_broken,
             self._on_relation_broken,
         )
@@ -31,18 +35,27 @@ class UserGroupProvides(Object):
     def _relation(self):
         return self.framework.model.get_relation(self._relation_name)
 
+    def _set_relation_data(self):
+        """Configure the relation data"""
+        self._relation.data[self.model.app]["user_name"] = "armada_agent"
+        self._relation.data[self.model.app]["user_uid"] = "4671"
+        self._relation.data[self.model.app]["group_name"] = "armada_agent"
+
     def _on_relation_created(self, event):
         """Create the user and group sent by the provides side of the relation."""
-        self._relation.data[self.model.app]["user"] = "armada_agent"
-        self._relation.data[self.model.app]["group"] = "armada_agent"
+        self._set_relation_data()
 
     def _on_relation_changed(self, event):
-        if self._relation.data[self.model.app]["status"]:
-            logger.info("## Starting Armada agent")
-            self._charm._armada_agent_ops.systemctl("start")
-            self._charm.unit.status = ActiveStatus("armada agent started")
+        # if self._relation.data[self.model.app]["status"]:
+        logger.info("## Starting Armada agent")
+        self._charm._armada_agent_ops.systemctl("start")
+        self._charm.unit.status = ActiveStatus("armada agent started")
 
-        logger.info("## Armada agent wasn't started")
+        # logger.info("## Armada agent wasn't started")
+
+    def _on_relation_departed(self, event):
+        """Sends data to the other side of the relation"""
+        self._set_relation_data()
 
     def _on_relation_broken(self, event):
         """Stops the daemon service"""
