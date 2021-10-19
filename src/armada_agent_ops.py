@@ -150,7 +150,7 @@ class ArmadaAgentOps:
         logger.debug("## Creating armada_agent user")
         cmd = (
             "useradd --system --no-create-home "
-            f"--gid {self._ARMADA_AGENT_GROUP} --shell /usr/sbin/nologin {self._ARMADA_AGENT_USER}"
+            f"--gid {self._ARMADA_AGENT_GROUP} --shell /usr/sbin/nologin -u 4671 {self._ARMADA_AGENT_USER}"
         )
         try:
             subprocess.check_output(shlex.split(cmd))
