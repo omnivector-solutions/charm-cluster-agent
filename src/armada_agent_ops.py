@@ -25,8 +25,9 @@ class ArmadaAgentOps:
     _PIP_CMD = _VENV_DIR.joinpath("bin", "pip3.8").as_posix()
     _PYTHON_CMD = Path("/usr/bin/python3.8")
 
-    _ARMADA_AGENT_USER = "armada_agent"
-    _ARMADA_AGENT_GROUP = _ARMADA_AGENT_USER
+    ARMADA_AGENT_USER = "armada_agent"
+    ARMADA_AGENT_GROUP = ARMADA_AGENT_USER
+    ARMADA_AGENT_USER_UID = "4671"
 
     def __init__(self, charm):
         """Initialize armada-agent-ops."""
@@ -86,7 +87,7 @@ class ArmadaAgentOps:
         api_key = ctxt.get("api_key")
         backend_url = ctxt.get("backend_url")
         log_dir = self._LOG_DIR.as_posix()
-        username = self._ARMADA_AGENT_USER
+        username = self.ARMADA_AGENT_USER
 
         ctxt = {
             "backend_url": backend_url,
@@ -132,12 +133,12 @@ class ArmadaAgentOps:
         rmtree(self._LOG_DIR.as_posix())
         rmtree(self._VENV_DIR.as_posix())
         # Delete the user and group
-        subprocess.call(["userdel", self._ARMADA_AGENT_USER])
-        subprocess.call(["groupdel", self._ARMADA_AGENT_GROUP])
+        subprocess.call(["userdel", self.ARMADA_AGENT_USER])
+        subprocess.call(["groupdel", self.ARMADA_AGENT_GROUP])
 
     def _create_armada_agent_user_group(self):
         logger.debug("## Creating the armada_agent group")
-        cmd = f"groupadd {self._ARMADA_AGENT_GROUP}"
+        cmd = f"groupadd {self.ARMADA_AGENT_GROUP}"
         try:
             subprocess.check_output(shlex.split(cmd))
         except subprocess.CalledProcessError as e:
@@ -150,7 +151,7 @@ class ArmadaAgentOps:
         logger.debug("## Creating armada_agent user")
         cmd = (
             "useradd --system --no-create-home "
-            f"--gid {self._ARMADA_AGENT_GROUP} --shell /usr/sbin/nologin -u 4671 {self._ARMADA_AGENT_USER}"
+            f"--gid {self.ARMADA_AGENT_GROUP} --shell /usr/sbin/nologin -u {self.ARMADA_AGENT_USER_UID} {self.ARMADA_AGENT_USER}"
         )
         try:
             subprocess.check_output(shlex.split(cmd))
@@ -164,7 +165,7 @@ class ArmadaAgentOps:
         logger.debug(f"## Adding armada_agent user to {self._sudo_group} group")
         # Add the 'armada_agent' user to sudo.
         # This is needed because the armada_agent user need to create tokens for the root user.
-        subprocess.call(shlex.split(f"usermod -aG {self._sudo_group} {self._ARMADA_AGENT_USER}"))
+        subprocess.call(shlex.split(f"usermod -aG {self._sudo_group} {self.ARMADA_AGENT_USER}"))
         logger.debug(f"## armada_agent user added to {self._sudo_group} group")
 
     @property
@@ -189,7 +190,7 @@ class ArmadaAgentOps:
             [
                 "chown",
                 "-R",
-                f"{self._ARMADA_AGENT_USER}:{self._ARMADA_AGENT_GROUP}",
+                f"{self.ARMADA_AGENT_USER}:{self.ARMADA_AGENT_GROUP}",
                 self._LOG_DIR.as_posix(),
             ]
         )

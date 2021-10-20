@@ -28,7 +28,7 @@ class ArmadaAgentCharm(CharmBase):
         self._stored.set_default(backend_url=str())
         self._stored.set_default(config_available=False)
 
-        self._armada_agent_ops = ArmadaAgentOps(self)
+        self.armada_agent_ops = ArmadaAgentOps(self)
         self._user_group = UserGroupProvides(self, "user-group")
 
         event_handler_bindings = {
@@ -44,7 +44,7 @@ class ArmadaAgentCharm(CharmBase):
     def _on_install(self, event):
         """Install armada-agent."""
         try:
-            self._armada_agent_ops.install()
+            self.armada_agent_ops.install()
             self._stored.installed = True
         except:
             self._stored.installed = False
@@ -90,17 +90,17 @@ class ArmadaAgentCharm(CharmBase):
             "backend_url": backend_url_from_config,
         }
 
-        self._armada_agent_ops.configure_env_defaults(ctxt)
+        self.armada_agent_ops.configure_env_defaults(ctxt)
         self._stored.config_available = True
 
     def _on_remove(self, event):
         """Remove directories and files created by armada-agent charm."""
-        self._armada_agent_ops.remove()
+        self.armada_agent_ops.remove()
 
     def _on_upgrade_action(self, event):
         version = event.params["version"]
         try:
-            self._armada_agent_ops.upgrade(version)
+            self.armada_agent_ops.upgrade(version)
             event.set_results({"upgrade": "success"})
         except:
             self.unit.status = BlockedStatus("Error upgrading armada-agent")

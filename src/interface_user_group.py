@@ -37,21 +37,19 @@ class UserGroupProvides(Object):
 
     def _set_relation_data(self):
         """Configure the relation data"""
-        self._relation.data[self.model.app]["user_name"] = "armada_agent"
-        self._relation.data[self.model.app]["user_uid"] = "4671"
-        self._relation.data[self.model.app]["group_name"] = "armada_agent"
+        self._relation.data[self.model.app]["user_name"] = self._charm.armada_agent_ops.ARMADA_AGENT_USER
+        self._relation.data[self.model.app]["user_uid"] = self._charm.armada_agent_ops.ARMADA_AGENT_USER_UID
+        self._relation.data[self.model.app]["group_name"] = self._charm.armada_agent_ops.ARMADA_AGENT_GROUP
 
     def _on_relation_created(self, event):
         """Create the user and group sent by the provides side of the relation."""
         self._set_relation_data()
 
     def _on_relation_changed(self, event):
-        # if self._relation.data[self.model.app]["status"]:
+        """Starts the daemon service"""
         logger.info("## Starting Armada agent")
-        self._charm._armada_agent_ops.systemctl("start")
+        self._charm.armada_agent_ops.systemctl("start")
         self._charm.unit.status = ActiveStatus("armada agent started")
-
-        # logger.info("## Armada agent wasn't started")
 
     def _on_relation_departed(self, event):
         """Sends data to the other side of the relation"""
@@ -61,5 +59,5 @@ class UserGroupProvides(Object):
         """Stops the daemon service"""
 
         logger.info("## Stopping Armada agent")
-        self._charm._armada_agent_ops.systemctl("stop")
+        self._charm.armada_agent_ops.systemctl("stop")
         self._charm.unit.status = WaitingStatus("armada agent stopped")
