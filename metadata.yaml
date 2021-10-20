@@ -12,6 +12,6 @@ series:
     - centos7
     - focal
 
-provides:
+requires:
   user-group:
     interface: user-group
