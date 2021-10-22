@@ -47,7 +47,8 @@ class ArmadaAgentCharm(CharmBase):
         try:
             self.armada_agent_ops.install()
             self.stored.installed = True
-        except:
+        except Exception as e:
+            logger.error(f"## Error installing agent: {e}")
             self.stored.installed = False
             self.unit.status = BlockedStatus("Error installing armada-agent")
             event.defer()
