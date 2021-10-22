@@ -67,7 +67,7 @@ class ArmadaAgentCharm(CharmBase):
         if not self.stored.config_available:
             event.defer()
             return
-        
+
         if not self.stored.user_created:
             self.unit.status = WaitingStatus("waiting relation with slurmctld")
             event.defer()

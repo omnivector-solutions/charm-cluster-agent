@@ -1,7 +1,7 @@
 import logging
 
 from ops.framework import Object
-from ops.model import ActiveStatus, WaitingStatus
+from ops.model import WaitingStatus
 
 
 logger = logging.getLogger()
