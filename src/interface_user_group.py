@@ -46,10 +46,8 @@ class UserGroupProvides(Object):
         self._set_relation_data()
 
     def _on_relation_changed(self, event):
-        """Starts the daemon service"""
-        logger.info("## Starting Armada agent")
-        self._charm.armada_agent_ops.systemctl("start")
-        self._charm.unit.status = ActiveStatus("armada agent started")
+        """Sets the user_created flag as true"""
+        self._charm.stored.user_created = True
 
     def _on_relation_departed(self, event):
         """Sends data to the other side of the relation"""
