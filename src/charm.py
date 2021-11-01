@@ -8,7 +8,7 @@ from ops.main import main
 from ops.model import BlockedStatus, WaitingStatus, ActiveStatus
 
 from armada_agent_ops import ArmadaAgentOps
-from interface_user_group import UserGroupProvides
+from interface_user_group import UserGroupRequires
 
 
 logger = logging.getLogger()
@@ -30,7 +30,7 @@ class ArmadaAgentCharm(CharmBase):
         self.stored.set_default(user_created=False)
 
         self.armada_agent_ops = ArmadaAgentOps(self)
-        self._user_group = UserGroupProvides(self, "user-group")
+        self._user_group = UserGroupRequires(self, "user-group")
 
         event_handler_bindings = {
             self.on.install: self._on_install,
@@ -75,7 +75,7 @@ class ArmadaAgentCharm(CharmBase):
             return
 
         logger.info("## Starting Armada agent")
-        self.armada_agent_ops.systemctl("start")
+        self.armada_agent_ops.start_agent()
         self.unit.status = ActiveStatus("armada agent started")
 
     def _on_config_changed(self, event):

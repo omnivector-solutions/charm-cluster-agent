@@ -280,3 +280,15 @@ class ArmadaAgentOps:
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
+    
+    def start_agent(self):
+        """Starts the armada-agent"""
+        self.systemctl("start")
+    
+    def stop_agent(self):
+        """Stops the armada-agent"""
+        self.systemctl("stop")
+    
+    def restart_agent(self):
+        """Restars the armada-agent"""
+        self.systemctl("restart")

@@ -1,13 +1,13 @@
 import logging
 
 from ops.framework import Object
-from ops.model import WaitingStatus
+from ops.model import WaitingStatus, ActiveStatus
 
 
 logger = logging.getLogger()
 
 
-class UserGroupProvides(Object):
+class UserGroupRequires(Object):
     def __init__(self, charm, relation_name):
         """Observe relation events."""
         super().__init__(charm, relation_name)
@@ -47,7 +47,12 @@ class UserGroupProvides(Object):
 
     def _on_relation_changed(self, event):
         """Sets the user_created flag as true"""
-        self._charm.stored.user_created = True
+        if event.relation.data.get(event.app):
+            if "success" in event.relation.data[event.app].get("status", "failure"):
+                self._charm.stored.user_created = True
+        
+        self._charm.armada_agent_ops.start_agent()
+        self._charm.unit.status = ActiveStatus("armada agent started")
 
     def _on_relation_departed(self, event):
         """Sends data to the other side of the relation"""
@@ -57,5 +62,5 @@ class UserGroupProvides(Object):
         """Stops the daemon service"""
 
         logger.info("## Stopping Armada agent")
-        self._charm.armada_agent_ops.systemctl("stop")
-        self._charm.unit.status = WaitingStatus("armada agent stopped")
+        self._charm.armada_agent_ops.stop_agent()
+        self._charm.unit.status = WaitingStatus("armada agent stopped. Waiting slurmctld relation")
