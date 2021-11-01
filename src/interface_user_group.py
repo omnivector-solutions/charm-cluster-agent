@@ -50,7 +50,7 @@ class UserGroupRequires(Object):
         if event.relation.data.get(event.app):
             if "success" in event.relation.data[event.app].get("status", "failure"):
                 self._charm.stored.user_created = True
-        
+
         self._charm.armada_agent_ops.start_agent()
         self._charm.unit.status = ActiveStatus("armada agent started")
 
