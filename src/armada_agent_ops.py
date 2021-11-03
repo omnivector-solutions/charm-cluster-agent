@@ -138,7 +138,8 @@ class ArmadaAgentOps:
 
     def _create_armada_agent_user_group(self):
         logger.debug("## Creating the armada_agent group")
-        cmd = f"groupadd {self.ARMADA_AGENT_GROUP}"
+        # use the UID as the GID too
+        cmd = f"groupadd {self.ARMADA_AGENT_GROUP} --gid {self.ARMADA_AGENT_USER_UID}"
         try:
             subprocess.check_output(shlex.split(cmd))
         except subprocess.CalledProcessError as e:
