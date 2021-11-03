@@ -3,12 +3,10 @@ ArmadaAgentOps.
 """
 import logging
 import os
-import shlex
-import subprocess
-
-from shutil import rmtree, copy2
-
 from pathlib import Path
+import shlex
+from shutil import copy2, rmtree
+import subprocess
 
 
 logger = logging.getLogger()
@@ -27,8 +25,9 @@ class ArmadaAgentOps:
     _PIP_CMD = _VENV_DIR.joinpath("bin", "pip3.8").as_posix()
     _PYTHON_CMD = Path("/usr/bin/python3.8")
 
-    _ARMADA_AGENT_USER = "armada_agent"
-    _ARMADA_AGENT_GROUP = _ARMADA_AGENT_USER
+    ARMADA_AGENT_USER = "armada_agent"
+    ARMADA_AGENT_GROUP = ARMADA_AGENT_USER
+    ARMADA_AGENT_USER_UID = "4671"
 
     def __init__(self, charm):
         """Initialize armada-agent-ops."""
@@ -38,9 +37,7 @@ class ArmadaAgentOps:
         """Get authorization token for installing armada-agent from CodeArtifact"""
 
         os.environ["AWS_ACCESS_KEY_ID"] = self._charm.model.config["aws-access-key-id"]
-        os.environ["AWS_SECRET_ACCESS_KEY"] = self._charm.model.config[
-            "aws-secret-access-key"
-        ]
+        os.environ["AWS_SECRET_ACCESS_KEY"] = self._charm.model.config["aws-secret-access-key"]
 
         domain = self._charm.model.config["package-url"].split("-")[0]
 
@@ -49,15 +46,9 @@ class ArmadaAgentOps:
         sts = boto3.client("sts")
         session_token_payload = sts.get_session_token()
 
-        os.environ["AWS_ACCESS_KEY_ID"] = session_token_payload.get("Credentials").get(
-            "AccessKeyId"
-        )
-        os.environ["AWS_SECRET_ACCESS_KEY"] = session_token_payload.get(
-            "Credentials"
-        ).get("SecretAccessKey")
-        os.environ["AWS_SESSION_TOKEN"] = session_token_payload.get("Credentials").get(
-            "SessionToken"
-        )
+        os.environ["AWS_ACCESS_KEY_ID"] = session_token_payload.get("Credentials").get("AccessKeyId")
+        os.environ["AWS_SECRET_ACCESS_KEY"] = session_token_payload.get("Credentials").get("SecretAccessKey")
+        os.environ["AWS_SESSION_TOKEN"] = session_token_payload.get("Credentials").get("SessionToken")
         os.environ["AWS_DEFAULT_REGION"] = self._charm.model.config["aws-region"]
 
         code_artifact = boto3.client("codeartifact")
@@ -96,7 +87,7 @@ class ArmadaAgentOps:
         api_key = ctxt.get("api_key")
         backend_url = ctxt.get("backend_url")
         log_dir = self._LOG_DIR.as_posix()
-        username = "root"
+        username = self.ARMADA_AGENT_USER
 
         ctxt = {
             "backend_url": backend_url,
@@ -105,9 +96,7 @@ class ArmadaAgentOps:
             "username": username,
         }
 
-        env_template = Path(
-            "./src/templates/armada-agent.defaults.template"
-        ).read_text()
+        env_template = Path("./src/templates/armada-agent.defaults.template").read_text()
 
         rendered_template = env_template.format(**ctxt)
 
@@ -144,12 +133,13 @@ class ArmadaAgentOps:
         rmtree(self._LOG_DIR.as_posix())
         rmtree(self._VENV_DIR.as_posix())
         # Delete the user and group
-        subprocess.call(["userdel", self._ARMADA_AGENT_USER])
-        subprocess.call(["groupdel", self._ARMADA_AGENT_GROUP])
+        subprocess.call(["userdel", self.ARMADA_AGENT_USER])
+        subprocess.call(["groupdel", self.ARMADA_AGENT_GROUP])
 
     def _create_armada_agent_user_group(self):
         logger.debug("## Creating the armada_agent group")
-        cmd = f"groupadd {self._ARMADA_AGENT_GROUP}"
+        # use the UID as the GID too
+        cmd = f"groupadd {self.ARMADA_AGENT_GROUP} --gid {self.ARMADA_AGENT_USER_UID}"
         try:
             subprocess.check_output(shlex.split(cmd))
         except subprocess.CalledProcessError as e:
@@ -162,7 +152,9 @@ class ArmadaAgentOps:
         logger.debug("## Creating armada_agent user")
         cmd = (
             "useradd --system --no-create-home "
-            f"--gid {self._ARMADA_AGENT_GROUP} --shell /usr/sbin/nologin {self._ARMADA_AGENT_USER}"
+            f"--gid {self.ARMADA_AGENT_GROUP} "
+            "--shell /usr/sbin/nologin "
+            f"-u {self.ARMADA_AGENT_USER_UID} {self.ARMADA_AGENT_USER}"
         )
         try:
             subprocess.check_output(shlex.split(cmd))
@@ -176,18 +168,13 @@ class ArmadaAgentOps:
         logger.debug(f"## Adding armada_agent user to {self._sudo_group} group")
         # Add the 'armada_agent' user to sudo.
         # This is needed because the armada_agent user need to create tokens for the root user.
-        subprocess.call(
-            shlex.split(f"usermod -aG {self._sudo_group} {self._ARMADA_AGENT_USER}")
-        )
+        subprocess.call(shlex.split(f"usermod -aG {self._sudo_group} {self.ARMADA_AGENT_USER}"))
         logger.debug(f"## armada_agent user added to {self._sudo_group} group")
 
     @property
     def _sudo_group(self) -> str:
         os_release = Path("/etc/os-release").read_text().split("\n")
-        os_release_ctxt = {
-            k: v.strip('"')
-            for k, v in [item.split("=") for item in os_release if item != ""]
-        }
+        os_release_ctxt = {k: v.strip('"') for k, v in [item.split("=") for item in os_release if item != ""]}
 
         # we need to take care of this corner case. All other OSes use "wheel"...
         if os_release_ctxt["ID"] == "ubuntu":
@@ -206,7 +193,7 @@ class ArmadaAgentOps:
             [
                 "chown",
                 "-R",
-                f"{self._ARMADA_AGENT_USER}:{self._ARMADA_AGENT_GROUP}",
+                f"{self.ARMADA_AGENT_USER}:{self.ARMADA_AGENT_GROUP}",
                 self._LOG_DIR.as_posix(),
             ]
         )
@@ -294,3 +281,15 @@ class ArmadaAgentOps:
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
+
+    def start_agent(self):
+        """Starts the armada-agent"""
+        self.systemctl("start")
+
+    def stop_agent(self):
+        """Stops the armada-agent"""
+        self.systemctl("stop")
+
+    def restart_agent(self):
+        """Restars the armada-agent"""
+        self.systemctl("restart")
