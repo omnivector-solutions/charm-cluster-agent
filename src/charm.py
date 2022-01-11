@@ -112,6 +112,7 @@ class ArmadaAgentCharm(CharmBase):
         try:
             self.armada_agent_ops.upgrade(version)
             event.set_results({"upgrade": "success"})
+            self.armada_agent_ops.restart_agent()
         except:
             self.unit.status = BlockedStatus("Error upgrading armada-agent")
             event.fail(message="Error upgrading armada-agent")
