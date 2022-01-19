@@ -1,15 +1,15 @@
 [Unit]
-Description=armada-agent
+Description=cluster-agent
 After=network.target
 
 [Service]
 Type=simple
-User=armada_agent
-Group=armada_agent
-WorkingDirectory=/srv/armada-agent-venv
-ExecStart=/srv/armada-agent-venv/bin/uvicorn armada_agent.main:app --port 8080 --host 0.0.0.0
+User=cluster_agent
+Group=cluster_agent
+WorkingDirectory=/srv/cluster-agent-venv
+ExecStart=/srv/cluster-agent-venv/bin/uvicorn cluster_agent.main:app --port 8080 --host 0.0.0.0
 
 [Install]
-Alias=armada-agent.service
+Alias=cluster-agent.service
 WantedBy=multi-user.target
 

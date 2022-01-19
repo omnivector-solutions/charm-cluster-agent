@@ -27,7 +27,7 @@ then
                 yum -y install epel-release
                 yum -y install python3
             fi
-            # We need python3.8 to run armada-agent.
+            # We need python3.8 to run cluster-agent.
             # Install python3.8 from source.
             if [ ! -e /usr/bin/python3.8 ]
             then

@@ -1,9 +1,9 @@
-name: armada-agent
-summary: Armada agent juju charm
+name: cluster-agent
+summary: Cluster agent juju charm
 maintainers:
     - Omnivector Solutions <info@omnivector.solutions>
 description: |
-    This charm provides the armada-agent.
+    This charm provides the cluster-agent.
 tags:
     - armada
     - omnivector

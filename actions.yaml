@@ -1,9 +1,9 @@
 upgrade:
   description: >
-    Upgrade armada-agent.
+    Upgrade cluster-agent.
   params:
     version:
       type: string
-      description: Version of armada-agent to upgrade to.
+      description: Version of cluster-agent to upgrade to.
   required:
     - version

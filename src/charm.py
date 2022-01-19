@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ArmadaAgentCharm."""
+"""ClusterAgentCharm."""
 import logging
 
 from ops.charm import CharmBase
@@ -7,15 +7,15 @@ from ops.framework import StoredState
 from ops.main import main
 from ops.model import BlockedStatus, WaitingStatus, ActiveStatus
 
-from armada_agent_ops import ArmadaAgentOps
+from cluster_agent_ops import ClusterAgentOps
 from interface_user_group import UserGroupRequires
 
 
 logger = logging.getLogger()
 
 
-class ArmadaAgentCharm(CharmBase):
-    """Facilitate Armada-agent lifecycle."""
+class ClusterAgentCharm(CharmBase):
+    """Facilitate Cluster-agent lifecycle."""
 
     stored = StoredState()
 
@@ -29,7 +29,7 @@ class ArmadaAgentCharm(CharmBase):
         self.stored.set_default(config_available=False)
         self.stored.set_default(user_created=False)
 
-        self.armada_agent_ops = ArmadaAgentOps(self)
+        self.cluster_agent_ops = ClusterAgentOps(self)
         self._user_group = UserGroupRequires(self, "user-group")
 
         event_handler_bindings = {
@@ -43,27 +43,27 @@ class ArmadaAgentCharm(CharmBase):
             self.framework.observe(event, handler)
 
     def _on_install(self, event):
-        """Install armada-agent."""
+        """Install cluster-agent."""
         try:
-            self.armada_agent_ops.install()
+            self.cluster_agent_ops.install()
             self.stored.installed = True
         except Exception as e:
             logger.error(f"## Error installing agent: {e}")
             self.stored.installed = False
-            self.unit.status = BlockedStatus("Error installing armada-agent")
+            self.unit.status = BlockedStatus("Error installing cluster-agent")
             event.defer()
             return
         # Log and set status
-        logger.debug("armada-agent installed")
-        self.unit.status = WaitingStatus("armada-agent installed")
+        logger.debug("cluster-agent installed")
+        self.unit.status = WaitingStatus("cluster-agent installed")
 
     def _on_start(self, event):
         """
-        Start armada-agent.
+        Start cluster-agent.
 
         Check that we have the needed configuration values and whether the
-        armada agent user is created in the slurmctld node, if so
-        start the armada-agent otherwise defer the event.
+        cluster agent user is created in the slurmctld node, if so
+        start the cluster-agent otherwise defer the event.
         """
         if not self.stored.config_available:
             event.defer()
@@ -74,12 +74,12 @@ class ArmadaAgentCharm(CharmBase):
             event.defer()
             return
 
-        logger.info("## Starting Armada agent")
-        self.armada_agent_ops.start_agent()
-        self.unit.status = ActiveStatus("armada agent started")
+        logger.info("## Starting Cluster agent")
+        self.cluster_agent_ops.start_agent()
+        self.unit.status = ActiveStatus("cluster agent started")
 
     def _on_config_changed(self, event):
-        """Configure armada-agent."""
+        """Configure cluster-agent."""
 
         # Get the api-key from the charm config
         api_key_from_config = self.model.config.get("api-key")
@@ -100,24 +100,24 @@ class ArmadaAgentCharm(CharmBase):
             "backend_url": backend_url_from_config,
         }
 
-        self.armada_agent_ops.configure_env_defaults(ctxt)
+        self.cluster_agent_ops.configure_env_defaults(ctxt)
         self.stored.config_available = True
 
     def _on_remove(self, event):
-        """Remove directories and files created by armada-agent charm."""
-        self.armada_agent_ops.remove()
+        """Remove directories and files created by cluster-agent charm."""
+        self.cluster_agent_ops.remove()
 
     def _on_upgrade_action(self, event):
         version = event.params["version"]
         try:
-            self.armada_agent_ops.upgrade(version)
+            self.cluster_agent_ops.upgrade(version)
             event.set_results({"upgrade": "success"})
-            self.armada_agent_ops.restart_agent()
+            self.cluster_agent_ops.restart_agent()
         except:
-            self.unit.status = BlockedStatus("Error upgrading armada-agent")
-            event.fail(message="Error upgrading armada-agent")
+            self.unit.status = BlockedStatus("Error upgrading cluster-agent")
+            event.fail(message="Error upgrading cluster-agent")
             event.defer()
 
 
 if __name__ == "__main__":
-    main(ArmadaAgentCharm)
+    main(ClusterAgentCharm)
