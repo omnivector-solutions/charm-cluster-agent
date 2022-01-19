@@ -8,6 +8,7 @@ from ops.main import main
 from ops.model import BlockedStatus, WaitingStatus, ActiveStatus
 
 from armada_agent_ops import ArmadaAgentOps
+from charms.fluentbit.v0.fluentbit import FluentbitClient
 from interface_user_group import UserGroupRequires
 
 
@@ -31,6 +32,7 @@ class ArmadaAgentCharm(CharmBase):
 
         self.armada_agent_ops = ArmadaAgentOps(self)
         self._user_group = UserGroupRequires(self, "user-group")
+        self._fluentbit = FluentbitClient(self, "fluentbit")
 
         event_handler_bindings = {
             self.on.install: self._on_install,
@@ -117,6 +119,17 @@ class ArmadaAgentCharm(CharmBase):
             self.unit.status = BlockedStatus("Error upgrading armada-agent")
             event.fail(message="Error upgrading armada-agent")
             event.defer()
+    
+    def _fluentbit_relation_created(self, event):
+        cfg = [{"input": [("Name",           "systemd"),
+                          ("Systemd_Filter", "_SYSTEMD_UNIT=armada-agent.service"),
+                          ("tag",            "armada-agent-systemd")]},
+               {"output": [("name",          "gelf"),
+                           ("Match",         "armada-agent-systemd"),
+                           ("Host",          "10.21.139.116"),
+                           ("Port",          "12201"),
+                           ("Mode",          "tcp")]}]
+        self._fluentbit.configure(cfg)
 
 
 if __name__ == "__main__":
