@@ -8,12 +8,12 @@ options:
     type: string
     default:
     description: |
-      The armada-api backend url.
+      The cluster-api backend url.
   package-url:
     type: string
-    default: private-212021838531.d.codeartifact.us-west-2.amazonaws.com/pypi/armada-agent/simple/
+    default: private-212021838531.d.codeartifact.us-west-2.amazonaws.com/pypi/agents/simple/
     description: |
-      Armada agent package url without protocol, e.g. <some aewsome domain>-<aws account id>.d.codeartifact.us-west-2.amazonaws.com/pypi/armada-agent/simple/
+      Cluster agent package url without protocol, e.g. <some awesome domain>-<aws account id>.d.codeartifact.us-west-2.amazonaws.com/pypi/agents/simple/
   aws-access-key-id:
     type: string
     default:
@@ -28,4 +28,4 @@ options:
     type: string
     default: us-west-2
     description: |
-      AWS region to which install the Armada agent package
+      AWS region to which install the Cluster agent package

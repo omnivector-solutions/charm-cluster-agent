@@ -3,5 +3,5 @@
 /.tox
 __pycache__
 
-/armada-agent
+/cluster-agent
 /.vscode

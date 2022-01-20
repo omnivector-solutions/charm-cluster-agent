@@ -1,5 +1,5 @@
 """
-ArmadaAgentOps.
+ClusterAgentOps.
 """
 import logging
 import os
@@ -12,29 +12,29 @@ import subprocess
 logger = logging.getLogger()
 
 
-class ArmadaAgentOps:
-    """Track and perform armada-agent ops."""
+class ClusterAgentOps:
+    """Track and perform cluster-agent ops."""
 
-    _PACKAGE_NAME = "armada-agent"
-    _SYSTEMD_SERVICE_NAME = "armada-agent"
-    _LOG_DIR = Path("/var/log/armada-agent")
+    _PACKAGE_NAME = "cluster-agent"
+    _SYSTEMD_SERVICE_NAME = "cluster-agent"
+    _LOG_DIR = Path("/var/log/cluster-agent")
     _SYSTEMD_BASE_PATH = Path("/usr/lib/systemd/system")
     _SYSTEMD_SERVICE_FILE = _SYSTEMD_BASE_PATH / f"{_PACKAGE_NAME}.service"
-    _VENV_DIR = Path("/srv/armada-agent-venv")
+    _VENV_DIR = Path("/srv/cluster-agent-venv")
     _ENV_DEFAULTS = _VENV_DIR / ".env"
     _PIP_CMD = _VENV_DIR.joinpath("bin", "pip3.8").as_posix()
     _PYTHON_CMD = Path("/usr/bin/python3.8")
 
-    ARMADA_AGENT_USER = "armada_agent"
-    ARMADA_AGENT_GROUP = ARMADA_AGENT_USER
-    ARMADA_AGENT_USER_UID = "4671"
+    CLUSTER_AGENT_USER = "cluster_agent"
+    CLUSTER_AGENT_GROUP = CLUSTER_AGENT_USER
+    CLUSTER_AGENT_USER_UID = "4671"
 
     def __init__(self, charm):
-        """Initialize armada-agent-ops."""
+        """Initialize cluster-agent-ops."""
         self._charm = charm
 
     def _get_authorization_token(self):
-        """Get authorization token for installing armada-agent from CodeArtifact"""
+        """Get authorization token for installing cluster-agent from CodeArtifact"""
 
         os.environ["AWS_ACCESS_KEY_ID"] = self._charm.model.config["aws-access-key-id"]
         os.environ["AWS_SECRET_ACCESS_KEY"] = self._charm.model.config["aws-secret-access-key"]
@@ -64,30 +64,30 @@ class ArmadaAgentOps:
         return pypi_url
 
     def install(self):
-        """Install armada-agent and setup ops."""
-        # Create the armada_agent user and group.
-        self._create_armada_agent_user_group()
-        # Create and permission the armada_agent log dir.
-        self._create_and_permission_armada_agent_log_dir()
+        """Install cluster-agent and setup ops."""
+        # Create the cluster_agent user and group.
+        self._create_cluster_agent_user_group()
+        # Create and permission the cluster_agent log dir.
+        self._create_and_permission_cluster_agent_log_dir()
         # Create the virtualenv and ensure pip is up to date.
         self._create_venv_and_ensure_latest_pip()
         # Install additional dependencies.
         self._install_extra_deps()
-        # Install armada-agent
-        self._install_armada_agent()
-        # Provision the armada-agent systemd service.
+        # Install cluster-agent
+        self._install_cluster_agent()
+        # Provision the cluster-agent systemd service.
         self._setup_systemd()
 
     def upgrade(self, version: str):
-        """Upgrade the armada-agent python package."""
-        self._upgrade_armada_agent(version)
+        """Upgrade the cluster-agent python package."""
+        self._upgrade_cluster_agent(version)
 
     def configure_env_defaults(self, ctxt):
         """Get the needed config, render and write out the file."""
         api_key = ctxt.get("api_key")
         backend_url = ctxt.get("backend_url")
         log_dir = self._LOG_DIR.as_posix()
-        username = self.ARMADA_AGENT_USER
+        username = self.CLUSTER_AGENT_USER
 
         ctxt = {
             "backend_url": backend_url,
@@ -96,7 +96,7 @@ class ArmadaAgentOps:
             "username": username,
         }
 
-        env_template = Path("./src/templates/armada-agent.defaults.template").read_text()
+        env_template = Path("./src/templates/cluster-agent.defaults.template").read_text()
 
         rendered_template = env_template.format(**ctxt)
 
@@ -133,28 +133,28 @@ class ArmadaAgentOps:
         rmtree(self._LOG_DIR.as_posix())
         rmtree(self._VENV_DIR.as_posix())
         # Delete the user and group
-        subprocess.call(["userdel", self.ARMADA_AGENT_USER])
-        subprocess.call(["groupdel", self.ARMADA_AGENT_GROUP])
+        subprocess.call(["userdel", self.CLUSTER_AGENT_USER])
+        subprocess.call(["groupdel", self.CLUSTER_AGENT_GROUP])
 
-    def _create_armada_agent_user_group(self):
-        logger.debug("## Creating the armada_agent group")
+    def _create_cluster_agent_user_group(self):
+        logger.debug("## Creating the cluster_agent group")
         # use the UID as the GID too
-        cmd = f"groupadd {self.ARMADA_AGENT_GROUP} --gid {self.ARMADA_AGENT_USER_UID}"
+        cmd = f"groupadd {self.CLUSTER_AGENT_GROUP} --gid {self.CLUSTER_AGENT_USER_UID}"
         try:
             subprocess.check_output(shlex.split(cmd))
         except subprocess.CalledProcessError as e:
             if e.returncode == 9:
                 logger.debug("## Group already exists")
             else:
-                logger.error(f"## Error creating armada group: {e}")
+                logger.error(f"## Error creating cluster group: {e}")
                 raise e
 
-        logger.debug("## Creating armada_agent user")
+        logger.debug("## Creating cluster_agent user")
         cmd = (
             "useradd --system --no-create-home "
-            f"--gid {self.ARMADA_AGENT_GROUP} "
+            f"--gid {self.CLUSTER_AGENT_GROUP} "
             "--shell /usr/sbin/nologin "
-            f"-u {self.ARMADA_AGENT_USER_UID} {self.ARMADA_AGENT_USER}"
+            f"-u {self.CLUSTER_AGENT_USER_UID} {self.CLUSTER_AGENT_USER}"
         )
         try:
             subprocess.check_output(shlex.split(cmd))
@@ -162,14 +162,14 @@ class ArmadaAgentOps:
             if e.returncode == 9:
                 logger.debug("## User already exists")
             else:
-                logger.error(f"## Error creating armada User: {e}")
+                logger.error(f"## Error creating cluster User: {e}")
                 raise e
 
-        logger.debug(f"## Adding armada_agent user to {self._sudo_group} group")
-        # Add the 'armada_agent' user to sudo.
-        # This is needed because the armada_agent user need to create tokens for the root user.
-        subprocess.call(shlex.split(f"usermod -aG {self._sudo_group} {self.ARMADA_AGENT_USER}"))
-        logger.debug(f"## armada_agent user added to {self._sudo_group} group")
+        logger.debug(f"## Adding cluster_agent user to {self._sudo_group} group")
+        # Add the 'cluster_agent' user to sudo.
+        # This is needed because the cluster_agent user need to create tokens for the root user.
+        subprocess.call(shlex.split(f"usermod -aG {self._sudo_group} {self.CLUSTER_AGENT_USER}"))
+        logger.debug(f"## cluster_agent user added to {self._sudo_group} group")
 
     @property
     def _sudo_group(self) -> str:
@@ -182,8 +182,8 @@ class ArmadaAgentOps:
 
         return "wheel"
 
-    def _create_and_permission_armada_agent_log_dir(self):
-        """Create the log dir and make sure it's owned by armada_agent:armada_agent."""
+    def _create_and_permission_cluster_agent_log_dir(self):
+        """Create the log dir and make sure it's owned by cluster_agent:cluster_agent."""
         if not self._LOG_DIR.exists():
             logger.debug(f"## Creating {self._LOG_DIR}")
             self._LOG_DIR.mkdir(parents=True)
@@ -193,11 +193,11 @@ class ArmadaAgentOps:
             [
                 "chown",
                 "-R",
-                f"{self.ARMADA_AGENT_USER}:{self.ARMADA_AGENT_GROUP}",
+                f"{self.CLUSTER_AGENT_USER}:{self.CLUSTER_AGENT_GROUP}",
                 self._LOG_DIR.as_posix(),
             ]
         )
-        logger.debug("## armada-agent log dir created and permissioned")
+        logger.debug("## cluster-agent log dir created and permissioned")
 
     def _create_venv_and_ensure_latest_pip(self):
         """Create the virtualenv and upgrade pip."""
@@ -211,7 +211,7 @@ class ArmadaAgentOps:
         ]
         logger.debug(f"## Creating virtualenv: {create_venv_cmd }")
         subprocess.call(create_venv_cmd)
-        logger.debug("## armada-agent virtualenv created")
+        logger.debug("## cluster-agent virtualenv created")
 
         # Ensure we have the latest pip
         upgrade_pip_cmd = [
@@ -225,17 +225,17 @@ class ArmadaAgentOps:
         logger.debug("## Pip upgraded")
 
     def _setup_systemd(self):
-        """Provision the armada-agent systemd service."""
+        """Provision the cluster-agent systemd service."""
         logger.debug(f"## Setting SystemD service: {self._SYSTEMD_SERVICE_FILE}")
         if self._SYSTEMD_SERVICE_FILE.exists():
             self._SYSTEMD_SERVICE_FILE.unlink()
         copy2(
-            "./src/templates/armada-agent.service",
+            "./src/templates/cluster-agent.service",
             self._SYSTEMD_SERVICE_FILE.as_posix(),
         )
-        logger.debug("## Enabling Armada service")
+        logger.debug("## Enabling Cluster service")
         self.systemctl("enable")
-        logger.debug("## Armada service enabled")
+        logger.debug("## Cluster service enabled")
 
     def _install_extra_deps(self):
         """Install additional dependencies."""
@@ -248,8 +248,8 @@ class ArmadaAgentOps:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
 
-    def _install_armada_agent(self):
-        """Install the armada-agent package."""
+    def _install_cluster_agent(self):
+        """Install the cluster-agent package."""
         cmd = [
             self._PIP_CMD,
             "install",
@@ -258,15 +258,15 @@ class ArmadaAgentOps:
             self._derived_package_url(),
             self._PACKAGE_NAME,
         ]
-        logger.debug(f"## Installing armada: {cmd}")
+        logger.debug(f"## Installing cluster: {cmd}")
         try:
             subprocess.call(cmd)
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
 
-    def _upgrade_armada_agent(self, version: str):
-        """Upgrade the armada-agent python package."""
+    def _upgrade_cluster_agent(self, version: str):
+        """Upgrade the cluster-agent python package."""
         cmd = [
             self._PIP_CMD,
             "install",
@@ -283,13 +283,13 @@ class ArmadaAgentOps:
             raise e
 
     def start_agent(self):
-        """Starts the armada-agent"""
+        """Starts the cluster-agent"""
         self.systemctl("start")
 
     def stop_agent(self):
-        """Stops the armada-agent"""
+        """Stops the cluster-agent"""
         self.systemctl("stop")
 
     def restart_agent(self):
-        """Restars the armada-agent"""
+        """Restars the cluster-agent"""
         self.systemctl("restart")

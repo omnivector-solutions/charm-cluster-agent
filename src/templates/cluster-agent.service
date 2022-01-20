@@ -1,0 +1,15 @@
+[Unit]
+Description=cluster-agent
+After=network.target
+
+[Service]
+Type=simple
+User=cluster_agent
+Group=cluster_agent
+WorkingDirectory=/srv/cluster-agent-venv
+ExecStart=/srv/cluster-agent-venv/bin/uvicorn cluster_agent.main:app --port 8080 --host 0.0.0.0
+
+[Install]
+Alias=cluster-agent.service
+WantedBy=multi-user.target
+

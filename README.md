@@ -1,4 +1,4 @@
-# charm-armada-agent
+# charm-cluster-agent
 
 
 # Usage
@@ -6,17 +6,17 @@ Follow the steps below to get started.
 
 ### Build the charm
 
-Running the following command will produce a .charm file, `armada-agent.charm`
+Running the following command will produce a .charm file, `cluster-agent.charm`
 ```bash
 charmcraft build
 ```
 
-### Create the armada-agent charm config
+### Create the cluster-agent charm config
 
-`armada-agent.yaml`
+`cluster-agent.yaml`
 
 ```yaml
-armada-agent:
+cluster-agent:
   api-key: "<backend api-key>"
   backend-url: "<backend-url>"
   aws-access-key-i: "<aws-access-key-i>"
@@ -26,7 +26,7 @@ armada-agent:
 e.g.
 
 ```yaml
-armada-agent:
+cluster-agent:
   backend-url: https://armada-k8s-staging.omnivector.solutions
   api-key: GJGXBnzhyt8zKiVV5s9sW9pONOBa4sTW2VUd0VPK
   aws-access-key-id: ABCDEFGHIJKLMN
@@ -36,21 +36,21 @@ armada-agent:
 ### Deploy the charm
 Using the built charm and the defined config, run the command to deploy the charm.
 ```bash
-juju deploy ./armada-agent.charm \
-    --config ./armada-agent.yaml \
+juju deploy ./cluster-agent.charm \
+    --config ./cluster-agent.yaml \
     --series centos7
 ```
 
 ### Charm Actions
-The armada-agent charm exposes additional functionality to facilitate armada-agent
+The cluster-agent charm exposes additional functionality to facilitate cluster-agent
 package upgrades.
 
-To upgrade the armada-agent to a new version or release:
+To upgrade the cluster-agent to a new version or release:
 ```bash
-juju run-action armada-agent/leader upgrade version="7.7.7"
+juju run-action cluster-agent/leader upgrade version="7.7.7"
 ```
 
-This will result in the armada-agent package upgrade to 7.7.7.
+This will result in the cluster-agent package upgrade to 7.7.7.
 
 #### License
 * MIT (see `LICENSE` file in this directory for full preamble)

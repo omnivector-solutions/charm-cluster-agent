@@ -37,9 +37,9 @@ class UserGroupRequires(Object):
 
     def _set_relation_data(self):
         """Configure the relation data"""
-        self._relation.data[self.model.app]["user_name"] = self._charm.armada_agent_ops.ARMADA_AGENT_USER
-        self._relation.data[self.model.app]["user_uid"] = self._charm.armada_agent_ops.ARMADA_AGENT_USER_UID
-        self._relation.data[self.model.app]["group_name"] = self._charm.armada_agent_ops.ARMADA_AGENT_GROUP
+        self._relation.data[self.model.app]["user_name"] = self._charm.cluster_agent_ops.CLUSTER_AGENT_USER
+        self._relation.data[self.model.app]["user_uid"] = self._charm.cluster_agent_ops.CLUSTER_AGENT_USER_UID
+        self._relation.data[self.model.app]["group_name"] = self._charm.cluster_agent_ops.CLUSTER_AGENT_GROUP
 
     def _on_relation_created(self, event):
         """Create the user and group sent by the provides side of the relation."""
@@ -51,8 +51,8 @@ class UserGroupRequires(Object):
             if "success" in event.relation.data[event.app].get("status", "failure"):
                 self._charm.stored.user_created = True
 
-        self._charm.armada_agent_ops.start_agent()
-        self._charm.unit.status = ActiveStatus("armada agent started")
+        self._charm.cluster_agent_ops.start_agent()
+        self._charm.unit.status = ActiveStatus("cluster agent started")
 
     def _on_relation_departed(self, event):
         """Sends data to the other side of the relation"""
@@ -61,6 +61,6 @@ class UserGroupRequires(Object):
     def _on_relation_broken(self, event):
         """Stops the daemon service"""
 
-        logger.info("## Stopping Armada agent")
-        self._charm.armada_agent_ops.stop_agent()
-        self._charm.unit.status = WaitingStatus("armada agent stopped. Waiting slurmctld relation")
+        logger.info("## Stopping Cluster agent")
+        self._charm.cluster_agent_ops.stop_agent()
+        self._charm.unit.status = WaitingStatus("cluster agent stopped. Waiting slurmctld relation")
