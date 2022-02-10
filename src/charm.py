@@ -5,7 +5,7 @@ import logging
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
-from ops.model import BlockedStatus, WaitingStatus, ActiveStatus
+from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 
 from cluster_agent_ops import ClusterAgentOps
 from interface_user_group import UserGroupRequires
@@ -24,8 +24,11 @@ class ClusterAgentCharm(CharmBase):
         super().__init__(*args)
 
         self.stored.set_default(installed=False)
-        self.stored.set_default(api_key=str())
         self.stored.set_default(backend_url=str())
+        self.stored.set_default(auth0_domain=str())
+        self.stored.set_default(auth0_audience=str())
+        self.stored.set_default(auth0_client_id=str())
+        self.stored.set_default(auth0_client_secret=str())
         self.stored.set_default(config_available=False)
         self.stored.set_default(user_created=False)
 
@@ -81,23 +84,49 @@ class ClusterAgentCharm(CharmBase):
     def _on_config_changed(self, event):
         """Configure cluster-agent."""
 
-        # Get the api-key from the charm config
-        api_key_from_config = self.model.config.get("api-key")
-        if api_key_from_config != self.stored.api_key:
-            self.stored.api_key = api_key_from_config
+        # Get the Auth0 domain from the charm config
+        auth0_domain_from_config = self.model.config.get("auth0-domain")
+        if auth0_domain_from_config != self.stored.auth0_domain:
+            self.stored.auth0_domain = auth0_domain_from_config
+
+        # Get the Auth0 audience from the charm config
+        auth0_audience_from_config = self.model.config.get("auth0-audience")
+        if auth0_audience_from_config != self.stored.auth0_audience:
+            self.stored.auth0_audience = auth0_audience_from_config
+
+        # Get the Auth0 client ID from the charm config
+        auth0_client_id_from_config = self.model.config.get("auth0-client-id")
+        if auth0_client_id_from_config != self.stored.auth0_client_id:
+            self.stored.auth0_client_id = auth0_client_id_from_config
+
+        # Get the Auth0 client secret from the charm config
+        auth0_client_secret_from_config = self.model.config.get("auth0-client-secret")
+        if auth0_client_secret_from_config != self.stored.auth0_client_secret:
+            self.stored.auth0_client_secret = auth0_client_secret_from_config
 
         # Get the backend-url from the charm config
         backend_url_from_config = self.model.config.get("backend-url")
         if backend_url_from_config != self.stored.backend_url:
             self.stored.backend_url = backend_url_from_config
 
-        if not all([api_key_from_config, backend_url_from_config]):
+        if not all(
+            [
+                auth0_domain_from_config,
+                auth0_audience_from_config,
+                auth0_client_id_from_config,
+                auth0_client_secret_from_config,
+                backend_url_from_config,
+            ]
+        ):
             event.defer()
             return
 
         ctxt = {
-            "api_key": api_key_from_config,
             "backend_url": backend_url_from_config,
+            "auth0_domain": auth0_domain_from_config,
+            "auth0_audience": auth0_audience_from_config,
+            "auth0_client_id": auth0_client_id_from_config,
+            "auth0_client_secret": auth0_client_secret_from_config,
         }
 
         self.cluster_agent_ops.configure_env_defaults(ctxt)
