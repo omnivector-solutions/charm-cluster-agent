@@ -1,7 +1,7 @@
 import logging
 
 from ops.framework import Object
-from ops.model import WaitingStatus, ActiveStatus
+from ops.model import ActiveStatus, WaitingStatus
 
 
 logger = logging.getLogger()
@@ -37,9 +37,15 @@ class UserGroupRequires(Object):
 
     def _set_relation_data(self):
         """Configure the relation data"""
-        self._relation.data[self.model.app]["user_name"] = self._charm.cluster_agent_ops.CLUSTER_AGENT_USER
-        self._relation.data[self.model.app]["user_uid"] = self._charm.cluster_agent_ops.CLUSTER_AGENT_USER_UID
-        self._relation.data[self.model.app]["group_name"] = self._charm.cluster_agent_ops.CLUSTER_AGENT_GROUP
+        self._relation.data[self.model.app][
+            "user_name"
+        ] = self._charm.cluster_agent_ops.CLUSTER_AGENT_USER
+        self._relation.data[self.model.app][
+            "user_uid"
+        ] = self._charm.cluster_agent_ops.CLUSTER_AGENT_USER_UID
+        self._relation.data[self.model.app][
+            "group_name"
+        ] = self._charm.cluster_agent_ops.CLUSTER_AGENT_GROUP
 
     def _on_relation_created(self, event):
         """Create the user and group sent by the provides side of the relation."""
@@ -63,4 +69,6 @@ class UserGroupRequires(Object):
 
         logger.info("## Stopping Cluster agent")
         self._charm.cluster_agent_ops.stop_agent()
-        self._charm.unit.status = WaitingStatus("cluster agent stopped. Waiting slurmctld relation")
+        self._charm.unit.status = WaitingStatus(
+            "cluster agent stopped. Waiting slurmctld relation"
+        )

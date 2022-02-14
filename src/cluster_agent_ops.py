@@ -2,7 +2,6 @@
 ClusterAgentOps.
 """
 import logging
-import os
 from pathlib import Path
 import shlex
 from shutil import copy2, rmtree
@@ -36,22 +35,24 @@ class ClusterAgentOps:
     def _get_authorization_token(self):
         """Get authorization token for installing cluster-agent from CodeArtifact"""
 
-        os.environ["AWS_ACCESS_KEY_ID"] = self._charm.model.config["aws-access-key-id"]
-        os.environ["AWS_SECRET_ACCESS_KEY"] = self._charm.model.config["aws-secret-access-key"]
-
         domain = self._charm.model.config["package-url"].split("-")[0]
 
         import boto3
 
-        sts = boto3.client("sts")
+        sts = boto3.client(
+            "sts",
+            aws_access_key_id=self._charm.model.config["aws-access-key-id"],
+            aws_secret_access_key=self._charm.model.config["aws-secret-access-key"]
+        )
         session_token_payload = sts.get_session_token()
 
-        os.environ["AWS_ACCESS_KEY_ID"] = session_token_payload.get("Credentials").get("AccessKeyId")
-        os.environ["AWS_SECRET_ACCESS_KEY"] = session_token_payload.get("Credentials").get("SecretAccessKey")
-        os.environ["AWS_SESSION_TOKEN"] = session_token_payload.get("Credentials").get("SessionToken")
-        os.environ["AWS_DEFAULT_REGION"] = self._charm.model.config["aws-region"]
-
-        code_artifact = boto3.client("codeartifact")
+        code_artifact = boto3.client(
+            "codeartifact",
+            aws_access_key_id=session_token_payload.get("Credentials").get("AccessKeyId"),
+            aws_secret_access_key=session_token_payload.get("Credentials").get("SecretAccessKey"),
+            aws_session_token=session_token_payload.get("Credentials").get("SessionToken"),
+            region_name=self._charm.model.config["aws-region"],
+        )
 
         codeartifact_auth_token = code_artifact.get_authorization_token(domain=domain)
         return codeartifact_auth_token.get("authorizationToken")
@@ -84,19 +85,27 @@ class ClusterAgentOps:
 
     def configure_env_defaults(self, ctxt):
         """Get the needed config, render and write out the file."""
-        api_key = ctxt.get("api_key")
         backend_url = ctxt.get("backend_url")
         log_dir = self._LOG_DIR.as_posix()
         username = self.CLUSTER_AGENT_USER
+        auth0_domain = ctxt.get("auth0_domain")
+        auth0_audience = ctxt.get("auth0_audience")
+        auth0_client_id = ctxt.get("auth0_client_id")
+        auth0_client_secret = ctxt.get("auth0_client_secret")
 
         ctxt = {
             "backend_url": backend_url,
-            "api_key": api_key,
             "log_dir": log_dir,
             "username": username,
+            "auth0_domain": auth0_domain,
+            "auth0_audience": auth0_audience,
+            "auth0_client_id": auth0_client_id,
+            "auth0_client_secret": auth0_client_secret,
         }
 
-        env_template = Path("./src/templates/cluster-agent.defaults.template").read_text()
+        env_template = Path(
+            "./src/templates/cluster-agent.defaults.template"
+        ).read_text()
 
         rendered_template = env_template.format(**ctxt)
 
@@ -168,13 +177,18 @@ class ClusterAgentOps:
         logger.debug(f"## Adding cluster_agent user to {self._sudo_group} group")
         # Add the 'cluster_agent' user to sudo.
         # This is needed because the cluster_agent user need to create tokens for the root user.
-        subprocess.call(shlex.split(f"usermod -aG {self._sudo_group} {self.CLUSTER_AGENT_USER}"))
+        subprocess.call(
+            shlex.split(f"usermod -aG {self._sudo_group} {self.CLUSTER_AGENT_USER}")
+        )
         logger.debug(f"## cluster_agent user added to {self._sudo_group} group")
 
     @property
     def _sudo_group(self) -> str:
         os_release = Path("/etc/os-release").read_text().split("\n")
-        os_release_ctxt = {k: v.strip('"') for k, v in [item.split("=") for item in os_release if item != ""]}
+        os_release_ctxt = {
+            k: v.strip('"')
+            for k, v in [item.split("=") for item in os_release if item != ""]
+        }
 
         # we need to take care of this corner case. All other OSes use "wheel"...
         if os_release_ctxt["ID"] == "ubuntu":
@@ -210,7 +224,7 @@ class ClusterAgentOps:
             self._VENV_DIR.as_posix(),
         ]
         logger.debug(f"## Creating virtualenv: {create_venv_cmd }")
-        subprocess.call(create_venv_cmd)
+        subprocess.call(create_venv_cmd, env=dict())
         logger.debug("## cluster-agent virtualenv created")
 
         # Ensure we have the latest pip
@@ -221,7 +235,7 @@ class ClusterAgentOps:
             "pip",
         ]
         logger.debug(f"## Updating pip: {upgrade_pip_cmd}")
-        subprocess.call(upgrade_pip_cmd)
+        subprocess.call(upgrade_pip_cmd, env=dict())
         logger.debug("## Pip upgraded")
 
     def _setup_systemd(self):
@@ -243,7 +257,7 @@ class ClusterAgentOps:
         cmd = [self._PIP_CMD, "install", "uvicorn", "pyyaml", "boto3==1.18.55"]
         logger.debug(f"## Installing exra dependencies: {cmd}")
         try:
-            subprocess.call(cmd)
+            subprocess.call(cmd, env=dict())
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
@@ -253,14 +267,17 @@ class ClusterAgentOps:
         cmd = [
             self._PIP_CMD,
             "install",
+            "--use-deprecated",
+            "html5lib",
             "-U",
             "-i",
             self._derived_package_url(),
             self._PACKAGE_NAME,
         ]
+        subprocess.call("echo {}".format(cmd).split())
         logger.debug(f"## Installing cluster: {cmd}")
         try:
-            subprocess.call(cmd)
+            subprocess.call(cmd, env=dict())
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
@@ -277,7 +294,7 @@ class ClusterAgentOps:
         ]
 
         try:
-            subprocess.call(cmd)
+            subprocess.call(cmd, env=dict())
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
