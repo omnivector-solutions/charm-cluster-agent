@@ -2,7 +2,6 @@
 ClusterAgentOps.
 """
 import logging
-import os
 from pathlib import Path
 import shlex
 from shutil import copy2, rmtree
@@ -36,30 +35,24 @@ class ClusterAgentOps:
     def _get_authorization_token(self):
         """Get authorization token for installing cluster-agent from CodeArtifact"""
 
-        os.environ["AWS_ACCESS_KEY_ID"] = self._charm.model.config["aws-access-key-id"]
-        os.environ["AWS_SECRET_ACCESS_KEY"] = self._charm.model.config[
-            "aws-secret-access-key"
-        ]
-
         domain = self._charm.model.config["package-url"].split("-")[0]
 
         import boto3
 
-        sts = boto3.client("sts")
+        sts = boto3.client(
+            "sts",
+            aws_access_key_id=self._charm.model.config["aws-access-key-id"],
+            aws_secret_access_key=self._charm.model.config["aws-secret-access-key"]
+        )
         session_token_payload = sts.get_session_token()
 
-        os.environ["AWS_ACCESS_KEY_ID"] = session_token_payload.get("Credentials").get(
-            "AccessKeyId"
+        code_artifact = boto3.client(
+            "codeartifact",
+            aws_access_key_id=session_token_payload.get("Credentials").get("AccessKeyId"),
+            aws_secret_access_key=session_token_payload.get("Credentials").get("SecretAccessKey"),
+            aws_session_token=session_token_payload.get("Credentials").get("SessionToken"),
+            region_name=self._charm.model.config["aws-region"],
         )
-        os.environ["AWS_SECRET_ACCESS_KEY"] = session_token_payload.get(
-            "Credentials"
-        ).get("SecretAccessKey")
-        os.environ["AWS_SESSION_TOKEN"] = session_token_payload.get("Credentials").get(
-            "SessionToken"
-        )
-        os.environ["AWS_DEFAULT_REGION"] = self._charm.model.config["aws-region"]
-
-        code_artifact = boto3.client("codeartifact")
 
         codeartifact_auth_token = code_artifact.get_authorization_token(domain=domain)
         return codeartifact_auth_token.get("authorizationToken")
