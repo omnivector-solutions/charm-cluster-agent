@@ -1,4 +1,9 @@
 options:
+  stat-interval:
+    type: int
+    default: 60
+    description: |
+      Interval (in seconds) at which the agent cron will run.
   backend-url:
     type: string
     default:
