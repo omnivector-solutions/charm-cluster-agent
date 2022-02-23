@@ -8,10 +8,15 @@ tags:
     - armada
     - omnivector
 
+subordinate: true
+
 series:
     - centos7
     - focal
 
 requires:
+  juju-info:
+      interface: juju-info
+      scope: container
   user-group:
     interface: user-group
