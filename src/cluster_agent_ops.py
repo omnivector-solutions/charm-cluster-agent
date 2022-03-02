@@ -246,8 +246,10 @@ class ClusterAgentOps:
 
     def _setup_systemd(self):
         """Provision the cluster-agent systemd service."""
-        copy2("./src/templates/cluster-agent.service",
-              self._SYSTEMD_SERVICE_FILE.as_posix())
+        copy2(
+            "./src/templates/cluster-agent.service",
+            self._SYSTEMD_SERVICE_FILE.as_posix(),
+        )
 
         charm_config = self._charm.model.config
         stat_interval = charm_config.get("stat-interval")
