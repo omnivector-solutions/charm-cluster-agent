@@ -2,10 +2,12 @@
 ClusterAgentOps.
 """
 import logging
-from pathlib import Path
 import shlex
-from shutil import copy2, rmtree
 import subprocess
+from pathlib import Path
+from shutil import copy2, rmtree
+
+from jinja2 import Environment, FileSystemLoader
 
 
 logger = logging.getLogger()
@@ -19,6 +21,8 @@ class ClusterAgentOps:
     _LOG_DIR = Path("/var/log/cluster-agent")
     _SYSTEMD_BASE_PATH = Path("/usr/lib/systemd/system")
     _SYSTEMD_SERVICE_FILE = _SYSTEMD_BASE_PATH / f"{_PACKAGE_NAME}.service"
+    _SYSTEMD_TIMER_NAME = f"{_PACKAGE_NAME}.timer"
+    _SYSTEMD_TIMER_FILE = _SYSTEMD_BASE_PATH / _SYSTEMD_TIMER_NAME
     _VENV_DIR = Path("/srv/cluster-agent-venv")
     _ENV_DEFAULTS = _VENV_DIR / ".env"
     _PIP_CMD = _VENV_DIR.joinpath("bin", "pip3.8").as_posix()
@@ -138,6 +142,8 @@ class ClusterAgentOps:
         # Remove files and dirs created by this charm.
         if self._SYSTEMD_SERVICE_FILE.exists():
             self._SYSTEMD_SERVICE_FILE.unlink()
+        if self._SYSTEMD_TIMER_FILE.exists():
+            self._SYSTEMD_TIMER_FILE.unlink()
         subprocess.call(["systemctl", "daemon-reload"])
         rmtree(self._LOG_DIR.as_posix())
         rmtree(self._VENV_DIR.as_posix())
@@ -240,16 +246,23 @@ class ClusterAgentOps:
 
     def _setup_systemd(self):
         """Provision the cluster-agent systemd service."""
-        logger.debug(f"## Setting SystemD service: {self._SYSTEMD_SERVICE_FILE}")
-        if self._SYSTEMD_SERVICE_FILE.exists():
-            self._SYSTEMD_SERVICE_FILE.unlink()
         copy2(
             "./src/templates/cluster-agent.service",
             self._SYSTEMD_SERVICE_FILE.as_posix(),
         )
-        logger.debug("## Enabling Cluster service")
+
+        charm_config = self._charm.model.config
+        stat_interval = charm_config.get("stat-interval")
+        ctxt = {"stat_interval": stat_interval}
+
+        template_dir = Path("./src/templates/")
+        environment = Environment(loader=FileSystemLoader(template_dir))
+        template = environment.get_template(self._SYSTEMD_TIMER_NAME)
+
+        rendered_template = template.render(ctxt)
+        self._SYSTEMD_TIMER_FILE.write_text(rendered_template)
+
         self.systemctl("enable")
-        logger.debug("## Cluster service enabled")
 
     def _install_extra_deps(self):
         """Install additional dependencies."""
