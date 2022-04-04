@@ -103,15 +103,15 @@ class ClusterAgentCharm(CharmBase):
             "ldap-password",
         ]
 
-        defer = False
         env_context = dict()
 
         for setting in settings_to_map:
             value = self.model.config.get(setting, sentinel)
 
-            # If the config value is not yet available, defer
+            # If any config value is not yet available, defer
             if value is sentinel:
-                defer = True
+                event.defer()
+                return
             else:
                 env_context[setting] = value
 
@@ -119,10 +119,6 @@ class ClusterAgentCharm(CharmBase):
                 store_value = getattr(self.stored, mapped_key, sentinel)
                 if store_value != value:
                     setattr(self.stored, mapped_key, value)
-
-        if defer:
-            event.defer()
-            return
 
         self.cluster_agent_ops.configure_env_defaults(env_context)
         self.stored.config_available = True
