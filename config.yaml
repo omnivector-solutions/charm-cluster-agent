@@ -1,14 +1,13 @@
 options:
+
+  # Used by systemd to specify the frequency of the agent execution
   stat-interval:
     type: int
     default: 60
     description: |
-      Interval (in seconds) at which the agent cron will run.
-  backend-url:
-    type: string
-    default:
-    description: |
-      The cluster-api backend url.
+      Interval (in seconds) at which the agent process will run.
+
+  # Settings for package installation from codeartifact
   package-url:
     type: string
     default: private-212021838531.d.codeartifact.us-west-2.amazonaws.com/pypi/agents/simple/
@@ -29,6 +28,20 @@ options:
     default: us-west-2
     description: |
       AWS region to which install the Cluster agent package
+
+  # Resource URLs
+  base-api-url:
+    type: string
+    default:
+    description: |
+      The cluster-api url.
+  base-slurmrestd-url:
+    type: string
+    default: http://127.0.0.1:6820
+    description: |
+      The url for the Slurm REST API.
+
+  # Auth related settings
   auth0-domain:
     type: string
     default: omnivector.us.auth0.com
@@ -49,4 +62,30 @@ options:
     default:
     description: |
       Secret to protect OIDC client resources
+  ldap-domain:
+    type: string
+    default:
+    description: |
+      Domain for the LDAP host used for user identity on the server
+  ldap-username:
+    type: string
+    default:
+    description: |
+      The username of the user that has directory-wide read permissions (or admin)
+  ldap-password:
+    type: string
+    default:
+    description: |
+      The password for the user that has directory-wide read permissions (or admin)
 
+  # Other settings
+  cache-dir:
+    type: string
+    default: /var/cache/cluster-agent
+    description: |
+      The directory where the cluster-agent may cache runtime values
+  sentry-dsn:
+    type: string
+    default:
+    description: |
+      The client url for sending error events to sentry
