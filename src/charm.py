@@ -12,7 +12,11 @@ from interface_user_group import UserGroupRequires
 
 
 logger = logging.getLogger()
-sentinel = object()
+
+# Create a sentinel value. For more information about sentinel values and their
+# purpose, see the PEP (with some excellent examples and rationale) here:
+# https://peps.python.org/pep-0661/
+unset = object()
 
 
 class ClusterAgentCharm(CharmBase):
@@ -85,8 +89,10 @@ class ClusterAgentCharm(CharmBase):
         environment settings for the charmed app. Also, store the config values in the
         stored state for the charm.
 
-        Note the use of ``sentinel`` values here. This allows us to distinguish between
-        *unset* values and values that were *explicitly* set to falsey or null values.
+        Note the use of the sentinel ``unset`` value here. This allows us to
+        distinguish between *unset* values and values that were *explicitly* set to
+        falsey or null values. For more information about sentinel values, see
+        `PEP-661 <https://peps.python.org/pep-0661/>_`.
         """
 
         settings_to_map = [
@@ -106,17 +112,17 @@ class ClusterAgentCharm(CharmBase):
         env_context = dict()
 
         for setting in settings_to_map:
-            value = self.model.config.get(setting, sentinel)
+            value = self.model.config.get(setting, unset)
 
             # If any config value is not yet available, defer
-            if value is sentinel:
+            if value is unset:
                 event.defer()
                 return
             else:
                 env_context[setting] = value
 
                 mapped_key = setting.replace("-", "_")
-                store_value = getattr(self.stored, mapped_key, sentinel)
+                store_value = getattr(self.stored, mapped_key, unset)
                 if store_value != value:
                     setattr(self.stored, mapped_key, value)
 
