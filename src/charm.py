@@ -12,6 +12,7 @@ from interface_user_group import UserGroupRequires
 
 
 logger = logging.getLogger()
+sentinel = object()
 
 
 class ClusterAgentCharm(CharmBase):
@@ -24,11 +25,6 @@ class ClusterAgentCharm(CharmBase):
         super().__init__(*args)
 
         self.stored.set_default(installed=False)
-        self.stored.set_default(backend_url=str())
-        self.stored.set_default(auth0_domain=str())
-        self.stored.set_default(auth0_audience=str())
-        self.stored.set_default(auth0_client_id=str())
-        self.stored.set_default(auth0_client_secret=str())
         self.stored.set_default(config_available=False)
         self.stored.set_default(user_created=False)
 
@@ -82,54 +78,53 @@ class ClusterAgentCharm(CharmBase):
         self.unit.status = ActiveStatus("cluster agent started")
 
     def _on_config_changed(self, event):
-        """Configure cluster-agent."""
+        """
+        Handle changes to the charm config.
 
-        # Get the Auth0 domain from the charm config
-        auth0_domain_from_config = self.model.config.get("auth0-domain")
-        if auth0_domain_from_config != self.stored.auth0_domain:
-            self.stored.auth0_domain = auth0_domain_from_config
+        If all the needed settings are available in the charm config, create the
+        environment settings for the charmed app. Also, store the config values in the
+        stored state for the charm.
 
-        # Get the Auth0 audience from the charm config
-        auth0_audience_from_config = self.model.config.get("auth0-audience")
-        if auth0_audience_from_config != self.stored.auth0_audience:
-            self.stored.auth0_audience = auth0_audience_from_config
+        Note the use of ``sentinel`` values here. This allows us to distinguish between
+        *unset* values and values that were *explicitly* set to falsey or null values.
+        """
 
-        # Get the Auth0 client ID from the charm config
-        auth0_client_id_from_config = self.model.config.get("auth0-client-id")
-        if auth0_client_id_from_config != self.stored.auth0_client_id:
-            self.stored.auth0_client_id = auth0_client_id_from_config
+        settings_to_map = [
+            "base-api-url",
+            "base-slurmrestd-url",
+            "cache-dir",
+            "sentry-dsn",
+            "auth0-domain",
+            "auth0-audience",
+            "auth0-client-id",
+            "auth0-client-secret",
+            "ldap-domain",
+            "ldap-username",
+            "ldap-password",
+        ]
 
-        # Get the Auth0 client secret from the charm config
-        auth0_client_secret_from_config = self.model.config.get("auth0-client-secret")
-        if auth0_client_secret_from_config != self.stored.auth0_client_secret:
-            self.stored.auth0_client_secret = auth0_client_secret_from_config
+        defer = False
+        env_context = dict()
 
-        # Get the backend-url from the charm config
-        backend_url_from_config = self.model.config.get("backend-url")
-        if backend_url_from_config != self.stored.backend_url:
-            self.stored.backend_url = backend_url_from_config
+        for setting in settings_to_map:
+            value = self.model.config.get(setting, sentinel)
 
-        if not all(
-            [
-                auth0_domain_from_config,
-                auth0_audience_from_config,
-                auth0_client_id_from_config,
-                auth0_client_secret_from_config,
-                backend_url_from_config,
-            ]
-        ):
+            # If the config value is not yet available, defer
+            if value is sentinel:
+                defer = True
+            else:
+                env_context[setting] = value
+
+                mapped_key = setting.replace("-", "_")
+                store_value = getattr(self.stored, mapped_key, sentinel)
+                if store_value != value:
+                    setattr(self.stored, mapped_key, value)
+
+        if defer:
             event.defer()
             return
 
-        ctxt = {
-            "backend_url": backend_url_from_config,
-            "auth0_domain": auth0_domain_from_config,
-            "auth0_audience": auth0_audience_from_config,
-            "auth0_client_id": auth0_client_id_from_config,
-            "auth0_client_secret": auth0_client_secret_from_config,
-        }
-
-        self.cluster_agent_ops.configure_env_defaults(ctxt)
+        self.cluster_agent_ops.configure_env_defaults(env_context)
         self.stored.config_available = True
 
     def _on_remove(self, event):

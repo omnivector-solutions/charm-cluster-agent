@@ -6,6 +6,7 @@ import shlex
 import subprocess
 from pathlib import Path
 from shutil import copy2, rmtree
+from typing import Dict, Any
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -18,7 +19,6 @@ class ClusterAgentOps:
 
     _PACKAGE_NAME = "cluster-agent"
     _SYSTEMD_SERVICE_NAME = "cluster-agent"
-    _LOG_DIR = Path("/var/log/cluster-agent")
     _SYSTEMD_BASE_PATH = Path("/usr/lib/systemd/system")
     _SYSTEMD_SERVICE_FILE = _SYSTEMD_BASE_PATH / f"{_PACKAGE_NAME}.service"
     _SYSTEMD_TIMER_NAME = f"{_PACKAGE_NAME}.timer"
@@ -64,16 +64,14 @@ class ClusterAgentOps:
     def _derived_package_url(self):
         """Derive the pypi package url from the the supplied config and package name."""
         package_url = self._charm.model.config["package-url"]
-        authozation_token = self._get_authorization_token()
-        pypi_url = f"https://aws:{authozation_token}@{package_url}"
+        authorization_token = self._get_authorization_token()
+        pypi_url = f"https://aws:{authorization_token}@{package_url}"
         return pypi_url
 
     def install(self):
         """Install cluster-agent and setup ops."""
         # Create the cluster_agent user and group.
         self._create_cluster_agent_user_group()
-        # Create and permission the cluster_agent log dir.
-        self._create_and_permission_cluster_agent_log_dir()
         # Create the virtualenv and ensure pip is up to date.
         self._create_venv_and_ensure_latest_pip()
         # Install additional dependencies.
@@ -87,36 +85,21 @@ class ClusterAgentOps:
         """Upgrade the cluster-agent python package."""
         self._upgrade_cluster_agent(version)
 
-    def configure_env_defaults(self, ctxt):
-        """Get the needed config, render and write out the file."""
-        backend_url = ctxt.get("backend_url")
-        log_dir = self._LOG_DIR.as_posix()
-        username = self.CLUSTER_AGENT_USER
-        auth0_domain = ctxt.get("auth0_domain")
-        auth0_audience = ctxt.get("auth0_audience")
-        auth0_client_id = ctxt.get("auth0_client_id")
-        auth0_client_secret = ctxt.get("auth0_client_secret")
+    def configure_env_defaults(self, config_context: Dict[str, Any]):
+        """
+        Map charm configs found in the config_context to app settings.
 
-        ctxt = {
-            "backend_url": backend_url,
-            "log_dir": log_dir,
-            "username": username,
-            "auth0_domain": auth0_domain,
-            "auth0_audience": auth0_audience,
-            "auth0_client_id": auth0_client_id,
-            "auth0_client_secret": auth0_client_secret,
-        }
+        Map the settings found in the charm's config.yaml to the expected
+        settings for the application (including the prefix). Write all settings to the
+        configured dot-env file. If the file exists, it should be replaced.
+        """
+        prefix = "CLUSTER_AGENT_"
+        with open(self._ENV_DEFAULTS, 'w') as env_file:
+            for (key, value) in config_context:
+                mapped_key = key.replace('-', '_').upper()
+                print(f"{prefix}{mapped_key}={value}", file=env_file)
 
-        env_template = Path(
-            "./src/templates/cluster-agent.defaults.template"
-        ).read_text()
-
-        rendered_template = env_template.format(**ctxt)
-
-        if self._ENV_DEFAULTS.exists():
-            self._ENV_DEFAULTS.unlink()
-
-        self._ENV_DEFAULTS.write_text(rendered_template)
+            print(f"{prefix}X_SLURM_USER_NAME={self.CLUSTER_AGENT_USER}")
 
     def systemctl(self, operation: str):
         """
@@ -145,7 +128,6 @@ class ClusterAgentOps:
         if self._SYSTEMD_TIMER_FILE.exists():
             self._SYSTEMD_TIMER_FILE.unlink()
         subprocess.call(["systemctl", "daemon-reload"])
-        rmtree(self._LOG_DIR.as_posix())
         rmtree(self._VENV_DIR.as_posix())
         # Delete the user and group
         subprocess.call(["userdel", self.CLUSTER_AGENT_USER])
@@ -201,23 +183,6 @@ class ClusterAgentOps:
             return "sudo"
 
         return "wheel"
-
-    def _create_and_permission_cluster_agent_log_dir(self):
-        """Create the log dir and make sure it's owned by cluster_agent:cluster_agent."""
-        if not self._LOG_DIR.exists():
-            logger.debug(f"## Creating {self._LOG_DIR}")
-            self._LOG_DIR.mkdir(parents=True)
-
-        logger.debug(f"## Setting permissions for {self._LOG_DIR}")
-        subprocess.call(
-            [
-                "chown",
-                "-R",
-                f"{self.CLUSTER_AGENT_USER}:{self.CLUSTER_AGENT_GROUP}",
-                self._LOG_DIR.as_posix(),
-            ]
-        )
-        logger.debug("## cluster-agent log dir created and permissioned")
 
     def _create_venv_and_ensure_latest_pip(self):
         """Create the virtualenv and upgrade pip."""
