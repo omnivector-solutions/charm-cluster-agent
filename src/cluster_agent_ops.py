@@ -2,7 +2,6 @@
 ClusterAgentOps.
 """
 import logging
-import shlex
 import subprocess
 from pathlib import Path
 from shutil import copy2, rmtree
