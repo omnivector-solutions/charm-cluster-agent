@@ -64,17 +64,14 @@ options:
       Secret to protect OIDC client resources
   ldap-domain:
     type: string
-    default:
     description: |
       Domain for the LDAP host used for user identity on the server
   ldap-username:
     type: string
-    default:
     description: |
       The username of the user that has directory-wide read permissions (or admin)
   ldap-password:
     type: string
-    default:
     description: |
       The password for the user that has directory-wide read permissions (or admin)
 
@@ -89,3 +86,8 @@ options:
     default:
     description: |
       The client url for sending error events to sentry
+  x-slurm-user-name:
+    type: string
+    default: slurm
+    description: |
+      The default username to use for requests to the Slurm REST API
