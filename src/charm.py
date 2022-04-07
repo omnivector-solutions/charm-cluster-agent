@@ -100,6 +100,7 @@ class ClusterAgentCharm(CharmBase):
             "ldap-domain": False,
             "ldap-username": False,
             "ldap-password": False,
+            "ldap-auth-type": False,
             "x-slurm-user-name": True,
         }
 

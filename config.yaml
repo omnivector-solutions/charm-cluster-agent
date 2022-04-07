@@ -74,6 +74,10 @@ options:
     type: string
     description: |
       The password for the user that has directory-wide read permissions (or admin)
+  ldap-auth-type:
+    type: string
+    description: |
+      The type of auth to use for ldap connection. (Should usually be NTLM)
 
   # Other settings
   cache-dir:
