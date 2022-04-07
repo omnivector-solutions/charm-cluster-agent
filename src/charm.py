@@ -8,7 +8,6 @@ from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 
 from cluster_agent_ops import ClusterAgentOps
-from interface_user_group import UserGroupRequires
 
 
 logger = logging.getLogger()
@@ -33,7 +32,6 @@ class ClusterAgentCharm(CharmBase):
         self.stored.set_default(user_created=False)
 
         self.cluster_agent_ops = ClusterAgentOps(self)
-        self._user_group = UserGroupRequires(self, "user-group")
 
         event_handler_bindings = {
             self.on.install: self._on_install,
@@ -72,11 +70,6 @@ class ClusterAgentCharm(CharmBase):
             event.defer()
             return
 
-        if not self.stored.user_created:
-            self.unit.status = WaitingStatus("waiting relation with slurmctld")
-            event.defer()
-            return
-
         logger.info("## Starting Cluster agent")
         self.cluster_agent_ops.start_agent()
         self.unit.status = ActiveStatus("cluster agent started")
@@ -95,29 +88,31 @@ class ClusterAgentCharm(CharmBase):
         `PEP-661 <https://peps.python.org/pep-0661/>_`.
         """
 
-        settings_to_map = [
-            "base-api-url",
-            "base-slurmrestd-url",
-            "cache-dir",
-            "sentry-dsn",
-            "auth0-domain",
-            "auth0-audience",
-            "auth0-client-id",
-            "auth0-client-secret",
-            "ldap-domain",
-            "ldap-username",
-            "ldap-password",
-        ]
+        settings_to_map = {
+            "base-api-url": True,
+            "base-slurmrestd-url": True,
+            "cache-dir": True,
+            "sentry-dsn": False,
+            "auth0-domain": True,
+            "auth0-audience": True,
+            "auth0-client-id": True,
+            "auth0-client-secret": True,
+            "ldap-domain": False,
+            "ldap-username": False,
+            "ldap-password": False,
+            "x-slurm-user-name": True,
+        }
 
         env_context = dict()
 
-        for setting in settings_to_map:
+        for (setting, is_required) in settings_to_map.items():
             value = self.model.config.get(setting, unset)
 
             # If any config value is not yet available, defer
             if value is unset:
-                event.defer()
-                return
+                if is_required:
+                    event.defer()
+                    return
             else:
                 env_context[setting] = value
 
@@ -128,6 +123,10 @@ class ClusterAgentCharm(CharmBase):
 
         self.cluster_agent_ops.configure_env_defaults(env_context)
         self.stored.config_available = True
+
+        logger.info("## Restarting Cluster agent")
+        self.cluster_agent_ops.restart_agent()
+        self.unit.status = ActiveStatus("cluster agent restarted")
 
     def _on_remove(self, event):
         """Remove directories and files created by cluster-agent charm."""

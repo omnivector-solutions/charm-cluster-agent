@@ -28,10 +28,6 @@ class ClusterAgentOps:
     _PIP_CMD = _VENV_DIR.joinpath("bin", "pip3.8").as_posix()
     _PYTHON_CMD = Path("/usr/bin/python3.8")
 
-    CLUSTER_AGENT_USER = "cluster_agent"
-    CLUSTER_AGENT_GROUP = CLUSTER_AGENT_USER
-    CLUSTER_AGENT_USER_UID = "4671"
-
     def __init__(self, charm):
         """Initialize cluster-agent-ops."""
         self._charm = charm
@@ -70,8 +66,6 @@ class ClusterAgentOps:
 
     def install(self):
         """Install cluster-agent and setup ops."""
-        # Create the cluster_agent user and group.
-        self._create_cluster_agent_user_group()
         # Create the virtualenv and ensure pip is up to date.
         self._create_venv_and_ensure_latest_pip()
         # Install additional dependencies.
@@ -95,15 +89,13 @@ class ClusterAgentOps:
         """
         prefix = "CLUSTER_AGENT_"
         with open(self._ENV_DEFAULTS, 'w') as env_file:
-            for (key, value) in config_context:
+            for (key, value) in config_context.items():
                 mapped_key = key.replace('-', '_').upper()
                 print(f"{prefix}{mapped_key}={value}", file=env_file)
 
-            print(f"{prefix}X_SLURM_USER_NAME={self.CLUSTER_AGENT_USER}")
-
     def systemctl(self, operation: str):
         """
-        Run systemctl command.
+        Run systemctl operation for the service.
         """
         cmd = [
             "systemctl",
@@ -129,60 +121,6 @@ class ClusterAgentOps:
             self._SYSTEMD_TIMER_FILE.unlink()
         subprocess.call(["systemctl", "daemon-reload"])
         rmtree(self._VENV_DIR.as_posix())
-        # Delete the user and group
-        subprocess.call(["userdel", self.CLUSTER_AGENT_USER])
-        subprocess.call(["groupdel", self.CLUSTER_AGENT_GROUP])
-
-    def _create_cluster_agent_user_group(self):
-        logger.debug("## Creating the cluster_agent group")
-        # use the UID as the GID too
-        cmd = f"groupadd {self.CLUSTER_AGENT_GROUP} --gid {self.CLUSTER_AGENT_USER_UID}"
-        try:
-            subprocess.check_output(shlex.split(cmd))
-        except subprocess.CalledProcessError as e:
-            if e.returncode == 9:
-                logger.debug("## Group already exists")
-            else:
-                logger.error(f"## Error creating cluster group: {e}")
-                raise e
-
-        logger.debug("## Creating cluster_agent user")
-        cmd = (
-            "useradd --system --no-create-home "
-            f"--gid {self.CLUSTER_AGENT_GROUP} "
-            "--shell /usr/sbin/nologin "
-            f"-u {self.CLUSTER_AGENT_USER_UID} {self.CLUSTER_AGENT_USER}"
-        )
-        try:
-            subprocess.check_output(shlex.split(cmd))
-        except subprocess.CalledProcessError as e:
-            if e.returncode == 9:
-                logger.debug("## User already exists")
-            else:
-                logger.error(f"## Error creating cluster User: {e}")
-                raise e
-
-        logger.debug(f"## Adding cluster_agent user to {self._sudo_group} group")
-        # Add the 'cluster_agent' user to sudo.
-        # This is needed because the cluster_agent user need to create tokens for the root user.
-        subprocess.call(
-            shlex.split(f"usermod -aG {self._sudo_group} {self.CLUSTER_AGENT_USER}")
-        )
-        logger.debug(f"## cluster_agent user added to {self._sudo_group} group")
-
-    @property
-    def _sudo_group(self) -> str:
-        os_release = Path("/etc/os-release").read_text().split("\n")
-        os_release_ctxt = {
-            k: v.strip('"')
-            for k, v in [item.split("=") for item in os_release if item != ""]
-        }
-
-        # we need to take care of this corner case. All other OSes use "wheel"...
-        if os_release_ctxt["ID"] == "ubuntu":
-            return "sudo"
-
-        return "wheel"
 
     def _create_venv_and_ensure_latest_pip(self):
         """Create the virtualenv and upgrade pip."""
@@ -227,7 +165,8 @@ class ClusterAgentOps:
         rendered_template = template.render(ctxt)
         self._SYSTEMD_TIMER_FILE.write_text(rendered_template)
 
-        self.systemctl("enable")
+        subprocess.call(["systemctl", "daemon-reload"])
+        subprocess.call(["systemctl", "enable", "--now", "cluster-agent.timer"])
 
     def _install_extra_deps(self):
         """Install additional dependencies."""

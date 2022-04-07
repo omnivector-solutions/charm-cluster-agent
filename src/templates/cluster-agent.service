@@ -4,12 +4,11 @@ After=network.target
 
 [Service]
 Type=oneshot
-User=cluster_agent
-Group=cluster_agent
+User=root
+Group=root
 WorkingDirectory=/srv/cluster-agent-venv
 ExecStart=/srv/cluster-agent-venv/bin/agentrun
 
 [Install]
 Alias=cluster-agent.service
 WantedBy=multi-user.target
-
