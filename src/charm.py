@@ -97,9 +97,11 @@ class ClusterAgentCharm(CharmBase):
             "auth0-audience": True,
             "auth0-client-id": True,
             "auth0-client-secret": True,
+            "slurm-user-mapper": False,
             "ldap-domain": False,
             "ldap-username": False,
             "ldap-password": False,
+            "ldap-auth-type": False,
             "x-slurm-user-name": True,
         }
 

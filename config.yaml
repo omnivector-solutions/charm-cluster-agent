@@ -62,6 +62,11 @@ options:
     default:
     description: |
       Secret to protect OIDC client resources
+  slurm-user-mapper:
+    type: string
+    default: LDAP
+    description: |
+      Type of user-mapper to use. May be LDAP or SINGLE_USER
   ldap-domain:
     type: string
     description: |
@@ -74,6 +79,11 @@ options:
     type: string
     description: |
       The password for the user that has directory-wide read permissions (or admin)
+  ldap-auth-type:
+    type: string
+    default: NTLM
+    description: |
+      The type of auth to use for ldap connection. (Should usually be NTLM)
 
   # Other settings
   cache-dir:
