@@ -96,6 +96,11 @@ options:
     default:
     description: |
       The client url for sending error events to sentry
+  sentry-env:
+    type: string
+    default: local
+    description: |
+      Sentry's environment flag, e.g. penny-staging, local, nash-production
   x-slurm-user-name:
     type: string
     default: slurm

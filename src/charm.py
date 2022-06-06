@@ -93,6 +93,7 @@ class ClusterAgentCharm(CharmBase):
             "base-slurmrestd-url": True,
             "cache-dir": True,
             "sentry-dsn": False,
+            "sentry-env": False,
             "auth0-domain": True,
             "auth0-audience": True,
             "auth0-client-id": True,
