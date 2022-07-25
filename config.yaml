@@ -7,28 +7,6 @@ options:
     description: |
       Interval (in seconds) at which the agent process will run.
 
-  # Settings for package installation from codeartifact
-  package-url:
-    type: string
-    default: private-212021838531.d.codeartifact.us-west-2.amazonaws.com/pypi/agents/simple/
-    description: |
-      Cluster agent package url without protocol, e.g. <some awesome domain>-<aws account id>.d.codeartifact.us-west-2.amazonaws.com/pypi/agents/simple/
-  aws-access-key-id:
-    type: string
-    default:
-    description: |
-      AWS access key ID in plain text.
-  aws-secret-access-key:
-    type: string
-    default:
-    description: |
-      AWS secret access key in plain text.
-  aws-region:
-    type: string
-    default: us-west-2
-    description: |
-      AWS region to which install the Cluster agent package
-
   # Resource URLs
   base-api-url:
     type: string
