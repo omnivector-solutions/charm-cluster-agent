@@ -1,0 +1,14 @@
+[Unit]
+Description=ovs-cluster-agent
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/srv/ovs-cluster-agent-venv
+ExecStart=/srv/ovs-cluster-agent-venv/bin/agentrun
+
+[Install]
+Alias=ovs-cluster-agent.service
+WantedBy=multi-user.target

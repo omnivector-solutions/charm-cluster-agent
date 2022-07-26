@@ -16,13 +16,13 @@ logger = logging.getLogger()
 class ClusterAgentOps:
     """Track and perform cluster-agent ops."""
 
-    _PACKAGE_NAME = "cluster-agent"
-    _SYSTEMD_SERVICE_NAME = "cluster-agent"
+    _PACKAGE_NAME = "ovs-cluster-agent"
+    _SYSTEMD_SERVICE_NAME = "ovs-cluster-agent"
     _SYSTEMD_BASE_PATH = Path("/usr/lib/systemd/system")
     _SYSTEMD_SERVICE_FILE = _SYSTEMD_BASE_PATH / f"{_PACKAGE_NAME}.service"
     _SYSTEMD_TIMER_NAME = f"{_PACKAGE_NAME}.timer"
     _SYSTEMD_TIMER_FILE = _SYSTEMD_BASE_PATH / _SYSTEMD_TIMER_NAME
-    _VENV_DIR = Path("/srv/cluster-agent-venv")
+    _VENV_DIR = Path("/srv/ovs-cluster-agent-venv")
     _ENV_DEFAULTS = _VENV_DIR / ".env"
     _PIP_CMD = _VENV_DIR.joinpath("bin", "pip3.8").as_posix()
     _PYTHON_CMD = Path("/usr/bin/python3.8")
@@ -30,38 +30,6 @@ class ClusterAgentOps:
     def __init__(self, charm):
         """Initialize cluster-agent-ops."""
         self._charm = charm
-
-    def _get_authorization_token(self):
-        """Get authorization token for installing cluster-agent from CodeArtifact"""
-
-        domain = self._charm.model.config["package-url"].split("-")[0]
-
-        import boto3
-
-        sts = boto3.client(
-            "sts",
-            aws_access_key_id=self._charm.model.config["aws-access-key-id"],
-            aws_secret_access_key=self._charm.model.config["aws-secret-access-key"]
-        )
-        session_token_payload = sts.get_session_token()
-
-        code_artifact = boto3.client(
-            "codeartifact",
-            aws_access_key_id=session_token_payload.get("Credentials").get("AccessKeyId"),
-            aws_secret_access_key=session_token_payload.get("Credentials").get("SecretAccessKey"),
-            aws_session_token=session_token_payload.get("Credentials").get("SessionToken"),
-            region_name=self._charm.model.config["aws-region"],
-        )
-
-        codeartifact_auth_token = code_artifact.get_authorization_token(domain=domain)
-        return codeartifact_auth_token.get("authorizationToken")
-
-    def _derived_package_url(self):
-        """Derive the pypi package url from the the supplied config and package name."""
-        package_url = self._charm.model.config["package-url"]
-        authorization_token = self._get_authorization_token()
-        pypi_url = f"https://aws:{authorization_token}@{package_url}"
-        return pypi_url
 
     def install(self):
         """Install cluster-agent and setup ops."""
@@ -149,7 +117,7 @@ class ClusterAgentOps:
     def _setup_systemd(self):
         """Provision the cluster-agent systemd service."""
         copy2(
-            "./src/templates/cluster-agent.service",
+            "./src/templates/ovs-cluster-agent.service",
             self._SYSTEMD_SERVICE_FILE.as_posix(),
         )
 
@@ -165,12 +133,12 @@ class ClusterAgentOps:
         self._SYSTEMD_TIMER_FILE.write_text(rendered_template)
 
         subprocess.call(["systemctl", "daemon-reload"])
-        subprocess.call(["systemctl", "enable", "--now", "cluster-agent.timer"])
+        subprocess.call(["systemctl", "enable", "--now", self._SYSTEMD_TIMER_NAME])
 
     def _install_extra_deps(self):
         """Install additional dependencies."""
         # Install uvicorn and pyyaml
-        cmd = [self._PIP_CMD, "install", "uvicorn", "pyyaml", "boto3==1.18.55"]
+        cmd = [self._PIP_CMD, "install", "uvicorn", "pyyaml"]
         logger.debug(f"## Installing exra dependencies: {cmd}")
         try:
             subprocess.call(cmd, env=dict())
@@ -186,8 +154,6 @@ class ClusterAgentOps:
             "--use-deprecated",
             "html5lib",
             "-U",
-            "-i",
-            self._derived_package_url(),
             self._PACKAGE_NAME,
         ]
         subprocess.call("echo {}".format(cmd).split())
@@ -204,8 +170,6 @@ class ClusterAgentOps:
             self._PIP_CMD,
             "install",
             "-U",
-            "-i",
-            self._derived_package_url(),
             f"{self._PACKAGE_NAME}=={version}",
         ]
 
