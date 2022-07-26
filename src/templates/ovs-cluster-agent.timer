@@ -1,5 +1,5 @@
 [Unit]
-Description=cluster-agent timer
+Description=ovs-cluster-agent timer
 After=network.target
 
 [Timer]

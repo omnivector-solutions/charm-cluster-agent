@@ -16,13 +16,13 @@ logger = logging.getLogger()
 class ClusterAgentOps:
     """Track and perform cluster-agent ops."""
 
-    _PACKAGE_NAME = "cluster-agent"
-    _SYSTEMD_SERVICE_NAME = "cluster-agent"
+    _PACKAGE_NAME = "ovs-cluster-agent"
+    _SYSTEMD_SERVICE_NAME = "ovs-cluster-agent"
     _SYSTEMD_BASE_PATH = Path("/usr/lib/systemd/system")
     _SYSTEMD_SERVICE_FILE = _SYSTEMD_BASE_PATH / f"{_PACKAGE_NAME}.service"
     _SYSTEMD_TIMER_NAME = f"{_PACKAGE_NAME}.timer"
     _SYSTEMD_TIMER_FILE = _SYSTEMD_BASE_PATH / _SYSTEMD_TIMER_NAME
-    _VENV_DIR = Path("/srv/cluster-agent-venv")
+    _VENV_DIR = Path("/srv/ovs-cluster-agent-venv")
     _ENV_DEFAULTS = _VENV_DIR / ".env"
     _PIP_CMD = _VENV_DIR.joinpath("bin", "pip3.8").as_posix()
     _PYTHON_CMD = Path("/usr/bin/python3.8")
@@ -117,7 +117,7 @@ class ClusterAgentOps:
     def _setup_systemd(self):
         """Provision the cluster-agent systemd service."""
         copy2(
-            "./src/templates/cluster-agent.service",
+            "./src/templates/ovs-cluster-agent.service",
             self._SYSTEMD_SERVICE_FILE.as_posix(),
         )
 
@@ -133,7 +133,7 @@ class ClusterAgentOps:
         self._SYSTEMD_TIMER_FILE.write_text(rendered_template)
 
         subprocess.call(["systemctl", "daemon-reload"])
-        subprocess.call(["systemctl", "enable", "--now", "cluster-agent.timer"])
+        subprocess.call(["systemctl", "enable", "--now", self._SYSTEMD_TIMER_NAME])
 
     def _install_extra_deps(self):
         """Install additional dependencies."""
