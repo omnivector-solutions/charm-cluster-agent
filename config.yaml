@@ -22,12 +22,12 @@ options:
   # Auth related settings
   oidc-domain:
     type: string
-    default: auth.staging.omnivectorhpc.systems/realms/scania
+    default:
     description: |
       OIDC provider domain
   oidc-audience:
     type: string
-    default: https://apis.omnivector.solutions
+    default:
     description: |
       OIDC provider audience
   oidc-client-id:
