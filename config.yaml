@@ -20,22 +20,22 @@ options:
       The url for the Slurm REST API.
 
   # Auth related settings
-  auth0-domain:
+  oidc-domain:
     type: string
-    default: omnivector.us.auth0.com
+    default:
     description: |
       OIDC provider domain
-  auth0-audience:
+  oidc-audience:
     type: string
-    default: https://armada.omnivector.solutions
+    default:
     description: |
       OIDC provider audience
-  auth0-client-id:
+  oidc-client-id:
     type: string
     default:
     description: |
       Client ID used to issue JWTs
-  auth0-client-secret:
+  oidc-client-secret:
     type: string
     default:
     description: |
