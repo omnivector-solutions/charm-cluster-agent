@@ -151,8 +151,6 @@ class ClusterAgentOps:
         cmd = [
             self._PIP_CMD,
             "install",
-            "--use-deprecated",
-            "html5lib",
             "-U",
             self._PACKAGE_NAME,
         ]
