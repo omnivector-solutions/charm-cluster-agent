@@ -39,11 +39,15 @@ class ClusterAgentOps:
         self._install_extra_deps()
         # Install cluster-agent
         self._install_cluster_agent()
+        # Clear cached data
+        self._clear_cache_dir()
         # Provision the cluster-agent systemd service.
         self._setup_systemd()
 
     def upgrade(self, version: str):
         """Upgrade the cluster-agent python package."""
+        # Clear cached data
+        self._clear_cache_dir()
         self._upgrade_cluster_agent(version)
 
     def configure_env_defaults(self, config_context: Dict[str, Any]):
@@ -176,6 +180,19 @@ class ClusterAgentOps:
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
+
+    def _clear_cache_dir(self):
+        """Clear the cache dir. Cluster-agent will recreate it on the next run."""
+
+        CACHE_DIR = Path.home() / ".cache/cluster-agent"
+
+        if CACHE_DIR.exists():
+            logger.debug(f"Clearing cache dir {CACHE_DIR.as_posix()}")
+            rmtree(CACHE_DIR, ignore_errors=True)
+        else:
+            logger.debug(
+                f"Tried to clean cache dir {CACHE_DIR.as_posix()}, but it does not exist"
+            )
 
     def start_agent(self):
         """Starts the cluster-agent"""
