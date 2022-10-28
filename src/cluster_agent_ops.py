@@ -64,6 +64,9 @@ class ClusterAgentOps:
                 mapped_key = key.replace("-", "_").upper()
                 print(f"{prefix}{mapped_key}={value}", file=env_file)
 
+        # Clear cached data
+        self._clear_cache_dir()
+
     def systemctl(self, operation: str):
         """
         Run systemctl operation for the service.
