@@ -108,11 +108,15 @@ class ClusterAgentCharm(CharmBase):
             "x-slurm-user-name": True,
         }
 
-        if not self.model.config.get("slurmrestd-jwt-key-path", None) and not self.model.config.get("slurmrestd-jwt-key-string", None):
+        if not self.model.config.get("slurmrestd-jwt-key-path", None) and not self.model.config.get(
+            "slurmrestd-jwt-key-string", None
+        ):
             logger.warn("Either slurmrestd-jwt-key-path or slurmrestd-jwt-key-string must be configured")
             event.defer()
 
-        if self.model.config.get("slurmrestd-jwt-key-path", None) and self.model.config.get("slurmrestd-jwt-key-string", None):
+        if self.model.config.get("slurmrestd-jwt-key-path", None) and self.model.config.get(
+            "slurmrestd-jwt-key-string", None
+        ):
             logger.warn(
                 "ALERT! Both slurmrestd-jwt-key-path and slurmrestd-jwt-key-string were configured. "
                 "Prioritizing the slurmrestd-jwt-key-string config."

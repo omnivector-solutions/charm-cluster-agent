@@ -55,9 +55,9 @@ class ClusterAgentOps:
         configured dot-env file. If the file exists, it should be replaced.
         """
         prefix = "CLUSTER_AGENT_"
-        with open(self._ENV_DEFAULTS, 'w') as env_file:
+        with open(self._ENV_DEFAULTS, "w") as env_file:
             for (key, value) in config_context.items():
-                mapped_key = key.replace('-', '_').upper()
+                mapped_key = key.replace("-", "_").upper()
                 print(f"{prefix}{mapped_key}={value}", file=env_file)
 
     def systemctl(self, operation: str):
