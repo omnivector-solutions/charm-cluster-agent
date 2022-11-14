@@ -18,6 +18,23 @@ options:
     default: http://127.0.0.1:6820
     description: |
       The url for the Slurm REST API.
+  
+  # Slurmrestd authentication
+  slurmrestd-jwt-key-path:
+    type: string
+    default:
+    description: |
+      Path to the Slurmrestd JWT secret key
+  slurmrestd-jwt-key-string:
+    type: string
+    default:
+    description: |
+      Slurmrestd's JWT secret key itself
+  slurmrestd-use-key-path:
+    type: boolean
+    default: true
+    description: |
+      Whether to use the JWT secret key path or the JWT secret key string
 
   # Auth related settings
   oidc-domain:
