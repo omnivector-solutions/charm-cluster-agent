@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """ClusterAgentCharm."""
 import logging
+from pathlib import Path
 
 from ops.charm import CharmBase
 from ops.framework import StoredState
@@ -45,6 +46,8 @@ class ClusterAgentCharm(CharmBase):
 
     def _on_install(self, event):
         """Install cluster-agent."""
+        self.unit.set_workload_version(Path("version").read_text().strip())
+
         try:
             self.cluster_agent_ops.install()
             self.stored.installed = True
@@ -57,6 +60,10 @@ class ClusterAgentCharm(CharmBase):
         # Log and set status
         logger.debug("cluster-agent installed")
         self.unit.status = WaitingStatus("cluster-agent installed")
+
+    def _on_upgrade(self, event):
+        """Perform upgrade operations."""
+        self.unit.set_workload_version(Path("version").read_text().strip())
 
     def _on_start(self, event):
         """
