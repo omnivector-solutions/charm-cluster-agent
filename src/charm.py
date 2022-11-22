@@ -164,11 +164,10 @@ class ClusterAgentCharm(CharmBase):
         try:
             self.cluster_agent_ops.upgrade(version)
             event.set_results({"upgrade": "success"})
-            self.cluster_agent_ops.restart_agent()
-        except:
-            self.unit.status = BlockedStatus("Error upgrading cluster-agent")
-            event.fail(message="Error upgrading cluster-agent")
-            event.defer()
+            self.unit.status = ActiveStatus(f"Updated to version {version}")
+        except Exception:
+            self.unit.status = BlockedStatus(f"Error updating to version {version}")
+            event.fail()
 
 
 if __name__ == "__main__":
