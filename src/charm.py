@@ -40,6 +40,7 @@ class ClusterAgentCharm(CharmBase):
             self.on.config_changed: self._on_config_changed,
             self.on.remove: self._on_remove,
             self.on.upgrade_action: self._on_upgrade_action,
+            self.on.clear_cache_dir_action: self._on_clear_cache_dir_action,
         }
         for event, handler in event_handler_bindings.items():
             self.framework.observe(event, handler)
@@ -168,6 +169,15 @@ class ClusterAgentCharm(CharmBase):
             self.unit.status = ActiveStatus(f"Updated to version {version}")
         except Exception:
             self.unit.status = BlockedStatus(f"Error updating to version {version}")
+            event.fail()
+
+    def _on_clear_cache_dir_action(self, event):
+        try:
+            self.cluster_agent_ops.clear_cache_dir()
+            event.set_results({"cache-clear": "success"})
+            self.unit.status = ActiveStatus("Cache cleared")
+        except Exception:
+            self.unit.status = BlockedStatus("Error clearing cache")
             event.fail()
 
 

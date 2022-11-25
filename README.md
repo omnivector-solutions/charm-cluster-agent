@@ -75,6 +75,16 @@ juju run-action cluster-agent/leader upgrade version="7.7.7"
 
 This will result in the cluster-agent package upgrade to 7.7.7.
 
+```bash
+juju run-action cluster-agent/leader upgrade version="7.7.7"
+```
+
+Manually triggers the cleaning of cluster-agent's cache dir:
+
+```bash
+juju run-action cluster-agent/leader clear-cache-dir
+```
+
 #### License
 
 * MIT (see `LICENSE` file in this directory for full preamble)

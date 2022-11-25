@@ -41,14 +41,14 @@ class ClusterAgentOps:
         # Install cluster-agent
         self._install_cluster_agent()
         # Clear cached data
-        self._clear_cache_dir()
+        self.clear_cache_dir()
         # Provision the cluster-agent systemd service.
         self._setup_systemd()
 
     def upgrade(self, version: str):
         """Upgrade the cluster-agent python package."""
         # Clear cached data
-        self._clear_cache_dir()
+        self.clear_cache_dir()
         self._upgrade_cluster_agent(version)
 
     def configure_env_defaults(self, config_context: Dict[str, Any]):
@@ -68,7 +68,7 @@ class ClusterAgentOps:
             print(f"{prefix}CACHE_DIR={self._CACHE_DIR}", file=env_file)
 
         # Clear cached data
-        self._clear_cache_dir()
+        self.clear_cache_dir()
 
     def systemctl(self, operation: str):
         """
@@ -187,7 +187,7 @@ class ClusterAgentOps:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
 
-    def _clear_cache_dir(self):
+    def clear_cache_dir(self):
         """Clear the cache dir. Cluster-agent will recreate it on the next run."""
 
         if self._CACHE_DIR.exists():
