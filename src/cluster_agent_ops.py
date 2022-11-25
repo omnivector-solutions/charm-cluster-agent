@@ -26,6 +26,7 @@ class ClusterAgentOps:
     _ENV_DEFAULTS = _VENV_DIR / ".env"
     _PIP_CMD = _VENV_DIR.joinpath("bin", "pip3.8").as_posix()
     _PYTHON_CMD = Path("/usr/bin/python3.8")
+    _CACHE_DIR = Path("/var/cache/cluster-agent")
 
     def __init__(self, charm):
         """Initialize cluster-agent-ops."""
@@ -63,6 +64,8 @@ class ClusterAgentOps:
             for (key, value) in config_context.items():
                 mapped_key = key.replace("-", "_").upper()
                 print(f"{prefix}{mapped_key}={value}", file=env_file)
+
+            print(f"{prefix}CACHE_DIR={self._CACHE_DIR}", file=env_file)
 
         # Clear cached data
         self._clear_cache_dir()
@@ -187,14 +190,14 @@ class ClusterAgentOps:
     def _clear_cache_dir(self):
         """Clear the cache dir. Cluster-agent will recreate it on the next run."""
 
-        CACHE_DIR = Path.home() / ".cache/cluster-agent"
-
-        if CACHE_DIR.exists():
-            logger.debug(f"Clearing cache dir {CACHE_DIR.as_posix()}")
-            rmtree(CACHE_DIR, ignore_errors=True)
+        if self._CACHE_DIR.exists():
+            logger.debug(f"Clearing cache dir {self._CACHE_DIR.as_posix()}")
+            rmtree(self._CACHE_DIR, ignore_errors=True)
         else:
             logger.debug(
-                f"Tried to clean cache dir {CACHE_DIR.as_posix()}, but it does not exist"
+                "Tried to clean cache dir {}, but it does not exist".format(
+                    self._CACHE_DIR.as_posix()
+                )
             )
 
     def start_agent(self):
