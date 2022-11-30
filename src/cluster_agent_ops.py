@@ -195,9 +195,7 @@ class ClusterAgentOps:
             rmtree(self._CACHE_DIR, ignore_errors=True)
         else:
             logger.debug(
-                "Tried to clean cache dir {}, but it does not exist".format(
-                    self._CACHE_DIR.as_posix()
-                )
+                f"Cache dir {self._CACHE_DIR.as_posix()} doesn't exist. Skipping."
             )
 
     def start_agent(self):
