@@ -187,16 +187,18 @@ class ClusterAgentOps:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
 
-    def clear_cache_dir(self):
+    def clear_cache_dir(self) -> str:
         """Clear the cache dir. Cluster-agent will recreate it on the next run."""
 
         if self._CACHE_DIR.exists():
             logger.debug(f"Clearing cache dir {self._CACHE_DIR.as_posix()}")
             rmtree(self._CACHE_DIR, ignore_errors=True)
+            return "Cache cleared"
         else:
             logger.debug(
                 f"Cache dir {self._CACHE_DIR.as_posix()} doesn't exist. Skipping."
             )
+            return "Cache dir doesn't exist. Skipping."
 
     def start_agent(self):
         """Starts the cluster-agent"""

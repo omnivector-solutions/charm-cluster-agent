@@ -173,9 +173,9 @@ class ClusterAgentCharm(CharmBase):
 
     def _on_clear_cache_dir_action(self, event):
         try:
-            self.cluster_agent_ops.clear_cache_dir()
+            result = self.cluster_agent_ops.clear_cache_dir()
             event.set_results({"cache-clear": "success"})
-            self.unit.status = ActiveStatus("Cache cleared")
+            self.unit.status = ActiveStatus(result)
         except Exception:
             self.unit.status = BlockedStatus("Error clearing cache")
             event.fail()
