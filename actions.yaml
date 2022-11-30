@@ -1,3 +1,6 @@
+clear-cache-dir:
+  description: >
+    Clear cluster-agent's cache directory (/var/cache/cluster-agent).
 upgrade:
   description: >
     Upgrade cluster-agent.

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """ClusterAgentCharm."""
 import logging
+from pathlib import Path
 
 from ops.charm import CharmBase
 from ops.framework import StoredState
@@ -39,12 +40,15 @@ class ClusterAgentCharm(CharmBase):
             self.on.config_changed: self._on_config_changed,
             self.on.remove: self._on_remove,
             self.on.upgrade_action: self._on_upgrade_action,
+            self.on.clear_cache_dir_action: self._on_clear_cache_dir_action,
         }
         for event, handler in event_handler_bindings.items():
             self.framework.observe(event, handler)
 
     def _on_install(self, event):
         """Install cluster-agent."""
+        self.unit.set_workload_version(Path("version").read_text().strip())
+
         try:
             self.cluster_agent_ops.install()
             self.stored.installed = True
@@ -57,6 +61,10 @@ class ClusterAgentCharm(CharmBase):
         # Log and set status
         logger.debug("cluster-agent installed")
         self.unit.status = WaitingStatus("cluster-agent installed")
+
+    def _on_upgrade(self, event):
+        """Perform upgrade operations."""
+        self.unit.set_workload_version(Path("version").read_text().strip())
 
     def _on_start(self, event):
         """
@@ -94,7 +102,6 @@ class ClusterAgentCharm(CharmBase):
             "slurmrestd-jwt-key-path": False,
             "slurmrestd-jwt-key-string": False,
             "slurmrestd-use-key-path": True,
-            "cache-dir": True,
             "sentry-dsn": False,
             "oidc-domain": True,
             "oidc-audience": True,
@@ -108,15 +115,17 @@ class ClusterAgentCharm(CharmBase):
             "x-slurm-user-name": True,
         }
 
-        if not self.model.config.get("slurmrestd-jwt-key-path", None) and not self.model.config.get(
-            "slurmrestd-jwt-key-string", None
-        ):
-            logger.warn("Either slurmrestd-jwt-key-path or slurmrestd-jwt-key-string must be configured")
+        if not self.model.config.get(
+            "slurmrestd-jwt-key-path", None
+        ) and not self.model.config.get("slurmrestd-jwt-key-string", None):
+            logger.warn(
+                "Either slurmrestd-jwt-key-path or slurmrestd-jwt-key-string must be configured"
+            )
             event.defer()
 
-        if self.model.config.get("slurmrestd-jwt-key-path", None) and self.model.config.get(
-            "slurmrestd-jwt-key-string", None
-        ):
+        if self.model.config.get(
+            "slurmrestd-jwt-key-path", None
+        ) and self.model.config.get("slurmrestd-jwt-key-string", None):
             logger.warn(
                 "ALERT! Both slurmrestd-jwt-key-path and slurmrestd-jwt-key-string were configured. "
                 "Prioritizing the slurmrestd-jwt-key-string config."
@@ -157,11 +166,19 @@ class ClusterAgentCharm(CharmBase):
         try:
             self.cluster_agent_ops.upgrade(version)
             event.set_results({"upgrade": "success"})
-            self.cluster_agent_ops.restart_agent()
-        except:
-            self.unit.status = BlockedStatus("Error upgrading cluster-agent")
-            event.fail(message="Error upgrading cluster-agent")
-            event.defer()
+            self.unit.status = ActiveStatus(f"Updated to version {version}")
+        except Exception:
+            self.unit.status = BlockedStatus(f"Error updating to version {version}")
+            event.fail()
+
+    def _on_clear_cache_dir_action(self, event):
+        try:
+            result = self.cluster_agent_ops.clear_cache_dir()
+            event.set_results({"cache-clear": "success"})
+            self.unit.status = ActiveStatus(result)
+        except Exception:
+            self.unit.status = BlockedStatus("Error clearing cache")
+            event.fail()
 
 
 if __name__ == "__main__":

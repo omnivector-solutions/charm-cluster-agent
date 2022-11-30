@@ -81,11 +81,6 @@ options:
       The type of auth to use for ldap connection. (Should usually be NTLM)
 
   # Other settings
-  cache-dir:
-    type: string
-    default: /var/cache/cluster-agent
-    description: |
-      The directory where the cluster-agent may cache runtime values
   sentry-dsn:
     type: string
     default:

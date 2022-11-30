@@ -26,6 +26,7 @@ class ClusterAgentOps:
     _ENV_DEFAULTS = _VENV_DIR / ".env"
     _PIP_CMD = _VENV_DIR.joinpath("bin", "pip3.8").as_posix()
     _PYTHON_CMD = Path("/usr/bin/python3.8")
+    _CACHE_DIR = Path("/var/cache/cluster-agent")
 
     def __init__(self, charm):
         """Initialize cluster-agent-ops."""
@@ -39,11 +40,15 @@ class ClusterAgentOps:
         self._install_extra_deps()
         # Install cluster-agent
         self._install_cluster_agent()
+        # Clear cached data
+        self.clear_cache_dir()
         # Provision the cluster-agent systemd service.
         self._setup_systemd()
 
     def upgrade(self, version: str):
         """Upgrade the cluster-agent python package."""
+        # Clear cached data
+        self.clear_cache_dir()
         self._upgrade_cluster_agent(version)
 
     def configure_env_defaults(self, config_context: Dict[str, Any]):
@@ -59,6 +64,11 @@ class ClusterAgentOps:
             for (key, value) in config_context.items():
                 mapped_key = key.replace("-", "_").upper()
                 print(f"{prefix}{mapped_key}={value}", file=env_file)
+
+            print(f"{prefix}CACHE_DIR={self._CACHE_DIR}", file=env_file)
+
+        # Clear cached data
+        self.clear_cache_dir()
 
     def systemctl(self, operation: str):
         """
@@ -176,6 +186,19 @@ class ClusterAgentOps:
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running {' '.join(cmd)} - {e}")
             raise e
+
+    def clear_cache_dir(self) -> str:
+        """Clear the cache dir. Cluster-agent will recreate it on the next run."""
+
+        if self._CACHE_DIR.exists():
+            logger.debug(f"Clearing cache dir {self._CACHE_DIR.as_posix()}")
+            rmtree(self._CACHE_DIR, ignore_errors=True)
+            return "Cache cleared"
+        else:
+            logger.debug(
+                f"Cache dir {self._CACHE_DIR.as_posix()} doesn't exist. Skipping."
+            )
+            return "Cache dir doesn't exist. Skipping."
 
     def start_agent(self):
         """Starts the cluster-agent"""
