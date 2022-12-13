@@ -51,6 +51,18 @@ class ClusterAgentOps:
         self.clear_cache_dir()
         self._upgrade_cluster_agent(version)
 
+    def get_version_info(self):
+        """Show version and info about ovs-cluster-agent."""
+        cmd = [
+            self._PIP_CMD,
+            "show",
+            self._PACKAGE_NAME
+        ]
+
+        out = subprocess.check_output(cmd, env={}).decode().strip()
+
+        return out
+
     def configure_env_defaults(self, config_context: Dict[str, Any]):
         """
         Map charm configs found in the config_context to app settings.
