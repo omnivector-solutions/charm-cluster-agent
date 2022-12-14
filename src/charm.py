@@ -36,11 +36,13 @@ class ClusterAgentCharm(CharmBase):
 
         event_handler_bindings = {
             self.on.install: self._on_install,
+            self.on.upgrade_charm: self._on_upgrade,
             self.on.start: self._on_start,
             self.on.config_changed: self._on_config_changed,
             self.on.remove: self._on_remove,
             self.on.upgrade_action: self._on_upgrade_action,
             self.on.clear_cache_dir_action: self._on_clear_cache_dir_action,
+            self.on.show_version_action: self._on_show_version_action,
         }
         for event, handler in event_handler_bindings.items():
             self.framework.observe(event, handler)
@@ -65,6 +67,11 @@ class ClusterAgentCharm(CharmBase):
     def _on_upgrade(self, event):
         """Perform upgrade operations."""
         self.unit.set_workload_version(Path("version").read_text().strip())
+
+    def _on_show_version_action(self, event):
+        """Show the info and version of ovs-cluster-agent."""
+        info = self.cluster_agent_ops.get_version_info()
+        event.set_results({"ovs-cluster-agent": info})
 
     def _on_start(self, event):
         """

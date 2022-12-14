@@ -1,6 +1,7 @@
 clear-cache-dir:
   description: >
     Clear cluster-agent's cache directory (/var/cache/cluster-agent).
+
 upgrade:
   description: >
     Upgrade cluster-agent.
@@ -10,3 +11,7 @@ upgrade:
       description: Version of cluster-agent to upgrade to.
   required:
     - version
+
+show-version:
+  description: >
+    Display the version and information about ovs-cluster-agent.
