@@ -1,5 +1,4 @@
 options:
-
   # Used by systemd to specify the frequency of the agent execution
   stat-interval:
     type: int
@@ -18,7 +17,12 @@ options:
     default: http://127.0.0.1:6820
     description: |
       The url for the Slurm REST API.
-  
+  slurm-restd-version:
+    type: string
+    default: v0.0.36
+    description: |
+      The target version for the Slurm REST API.
+
   # Slurmrestd authentication
   slurmrestd-jwt-key-path:
     type: string

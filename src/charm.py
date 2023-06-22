@@ -106,6 +106,7 @@ class ClusterAgentCharm(CharmBase):
         settings_to_map = {
             "base-api-url": True,
             "base-slurmrestd-url": True,
+            "slurm-restd-version": False,
             "slurmrestd-jwt-key-path": False,
             "slurmrestd-jwt-key-string": False,
             "slurmrestd-use-key-path": True,
@@ -141,7 +142,7 @@ class ClusterAgentCharm(CharmBase):
 
         env_context = dict()
 
-        for (setting, is_required) in settings_to_map.items():
+        for setting, is_required in settings_to_map.items():
             value = self.model.config.get(setting, unset)
 
             # If any config value is not yet available, defer

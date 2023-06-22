@@ -6,6 +6,7 @@ This file keeps track of all notable changes to charm-cluster-agent.
 
 Unreleased
 ----------
+- Added the new setting slurm-restd-version.
 
 1.0.0 - 2022-12-15
 ------------------
