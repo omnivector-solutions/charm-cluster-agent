@@ -6,6 +6,13 @@ This file keeps track of all notable changes to charm-cluster-agent.
 
 Unreleased
 ----------
+
+1.0.3 - 2023-08-04
+------------------
+- Added support for Rocky Linux and Ubuntu Jammy.
+
+1.0.2 - 2023-06-22
+------------------
 - Added the new setting slurm-restd-version.
 
 1.0.0 - 2022-12-15

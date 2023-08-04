@@ -40,7 +40,8 @@ then
             echo "Running unsuppored version of centos: $major"
             exit -1
         fi
-    else
+    elif [ $ID = 'ubuntu' ]
+    then
         # We are running an ubuntu os, so check for python and install the
         # needed venv package or python3 from source, depending on what already
         # exists on the system.

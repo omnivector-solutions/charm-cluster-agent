@@ -12,7 +12,9 @@ subordinate: true
 
 series:
     - centos7
+    - centos8
     - focal
+    - jammy
 
 requires:
   juju-info:
